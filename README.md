@@ -7,7 +7,7 @@
 ## 项目目标
 
 - 公网博客与本地管理器分离；
-- Markdown 内容只有一份，前台与 Studio 共同读取；
+- Markdown 内容维护一份，前台与 Studio 共同读取；
 - 本地编辑、预览和发布，管理器不暴露到公网；
 - Docker 优先部署，并为后续部署适配器保留接口；
 - 用户内容、公开配置和秘密配置相互分离。
@@ -55,7 +55,7 @@ pnpm check
 
 ## 开发流程
 
-禁止直接向 `main` 推送功能代码。请创建短生命周期分支，通过 Pull Request 合并；具体约定见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+日常开发从 `dev` 创建短生命周期分支，通过 Pull Request 合并回 `dev`；阶段版本再由 `dev` 合并到 `main`。禁止直接向两个长期分支推送功能代码，具体约定见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 部署
 
@@ -63,7 +63,7 @@ V1 以 Docker 自托管为主要目标。当前容器配置是可验证的基础
 
 ## 路线图
 
-V1 优先完成“编辑 → 预览 → Git 发布 → Docker 公网访问”的闭环。音乐、天气、弹幕、图床、复杂评论和统计后台属于 `Could Have`，不会阻塞 V1。
+V1 优先完成“编辑 → 预览 → Git 发布 → Docker 公网访问”的闭环。
 
 ## License
 
