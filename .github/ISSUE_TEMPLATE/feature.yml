@@ -1,0 +1,30 @@
+name: 功能需求
+description: 提议一个符合项目范围的功能
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题
+      description: 当前用户遇到了什么问题？
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: 期望结果
+      description: 描述用户可观察到的结果，不必预设实现。
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 需求等级
+      options: [Must, Should, Could, 未确定]
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收条件
