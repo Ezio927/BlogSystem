@@ -1,12 +1,2 @@
-import type { ButtonHTMLAttributes, PropsWithChildren } from "react";
-
-export function Button({
-  children,
-  ...props
-}: PropsWithChildren<ButtonHTMLAttributes<HTMLButtonElement>>) {
-  return (
-    <button type="button" {...props}>
-      {children}
-    </button>
-  );
-}
+// 共享 UI 组件将在正式开发阶段实现。
+export {};
