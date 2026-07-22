@@ -27,6 +27,15 @@ pnpm build
 pnpm check
 ```
 
+## 依赖安全覆盖
+
+根目录 `package.json` 中的 `pnpm.overrides` 用于替换 Next.js 16.2.11 当前锁定的易受攻击间接依赖：
+
+- PostCSS 至少使用 `8.5.10`；
+- Sharp 至少使用 `0.35.0`。
+
+升级 Next.js 后应重新运行 `pnpm audit --prod` 并检查上游依赖声明；确认上游已经采用安全版本后，才可以移除对应 override。
+
 ## 开发优先级
 
 1. 固定文章 schema；
