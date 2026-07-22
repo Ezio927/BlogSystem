@@ -55,7 +55,7 @@ pnpm check
 
 ## 开发流程
 
-禁止直接向 `main` 推送功能代码。请创建短生命周期分支，通过 Pull Request 合并；具体约定见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+日常开发从 `dev` 创建短生命周期分支，通过 Pull Request 合并回 `dev`；阶段版本再由 `dev` 合并到 `main`。禁止直接向两个长期分支推送功能代码，具体约定见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 部署
 
