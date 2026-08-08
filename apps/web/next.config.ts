@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  transpilePackages: ["@open-blog/content-core", "@open-blog/shared-types"]
 };
 
 export default nextConfig;

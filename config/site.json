@@ -1,0 +1,11 @@
+{
+  "name": "Open Blog",
+  "description": "记录技术学习、项目实践和日常思考。",
+  "author": "Open Blog Author",
+  "socials": [
+    {
+      "label": "GitHub",
+      "url": "https://github.com"
+    }
+  ]
+}

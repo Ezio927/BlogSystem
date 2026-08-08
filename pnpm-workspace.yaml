@@ -2,3 +2,12 @@ packages:
   - "apps/*"
   - "packages/*"
 
+overrides:
+  "postcss@<8.5.10": "8.5.22"
+  "sharp@<0.35.0": "0.35.3"
+
+allowBuilds:
+  sharp: true
+
+onlyBuiltDependencies:
+  - esbuild

@@ -1,2 +1,10 @@
-// 跨应用共享类型将在正式开发阶段实现。
-export {};
+export type {
+  AdjacentPosts,
+  ArchiveGroup,
+  Post,
+  PostFrontmatter,
+  PostMeta,
+  TagItem
+} from "./post";
+
+export type { SiteConfig, SiteSocialLink } from "./site";

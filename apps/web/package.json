@@ -9,9 +9,20 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@open-blog/content-core": "workspace:*",
+    "@open-blog/shared-types": "workspace:*",
+    "gray-matter": "^4.0.3",
+    "highlight.js": "^11.11.1",
+    "katex": "^0.18.1",
     "next": "16.2.11",
+    "next-mdx-remote": "^6.0.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "react-markdown": "^10.1.0",
+    "rehype-highlight": "^7.0.2",
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.19.7",
