@@ -8,3 +8,6 @@ overrides:
 
 allowBuilds:
   sharp: true
+
+onlyBuiltDependencies:
+  - esbuild
