@@ -2,23 +2,19 @@
   "name": "open-blog",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@10.15.1",
+  "packageManager": "pnpm@11.18.0+sha512.33d83c77da82f49fba836925c6f1b841181ec3132b670639bd012f7075f5c7cf634c5f870147c19aae7478fac01df09d8892e880454896edd23ee9b33757563c",
   "engines": {
     "node": ">=22.0.0"
   },
-  "pnpm": {
-    "overrides": {
-      "postcss@<8.5.10": "8.5.22",
-      "sharp@<0.35.0": "0.35.3"
-    }
-  },
+
   "scripts": {
     "dev": "pnpm --parallel --filter './apps/*' dev",
     "lint": "eslint .",
     "typecheck": "pnpm -r typecheck",
+    "validate:content": "tsx scripts/validate-content.ts",
     "test": "vitest run --passWithNoTests",
     "build": "pnpm -r build",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm lint && pnpm typecheck && pnpm validate:content && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -26,6 +22,7 @@
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "globals": "^16.5.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.53.1",
     "vitest": "^4.1.0"

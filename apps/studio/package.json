@@ -9,13 +9,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@mdx-js/mdx": "^3.1.1",
+    "@mdx-js/react": "^3.1.1",
+    "@open-blog/content-core": "workspace:*",
     "next": "16.2.11",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@types/node": "^22.19.7",
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "typescript": "^5.9.3"
   }

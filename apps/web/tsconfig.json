@@ -8,7 +8,8 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "../../config/**/*.ts"
+    "../../config/**/*.ts",
+    "../../packages/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }
