@@ -1,0 +1,1 @@
+Original Geist, Geist Mono and Noto Serif SC fonts, downloaded from Google Fonts on 2026-11-13. Self-hosted unchanged under the included SIL Open Font License files. CSS subsets preserve original Unicode ranges.

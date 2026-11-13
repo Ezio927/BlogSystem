@@ -1,14 +1,21 @@
-node_modules/
-.next/
-dist/
-coverage/
-*.tsbuildinfo
-.env
-.env.*
-!.env.example
-*.log
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
 
+.update-backups/
+**/manager_data/briefing/
+*.connection.json
+__pycache__/
+*.py[cod]
+/tests/tmp*/
+
+# Local runtime and private configuration
+**/node_modules/
+**/.next/
+**/.venv/
+**/manager_data/
+**/.env*
+!**/.env.example
+**/backend_config.json
+**/window_size.json
+*.log
+*.tsbuildinfo
+.idea/
+artifacts/
