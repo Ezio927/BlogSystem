@@ -1,0 +1,48 @@
+name: Blog checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            XHBlogs/package-lock.json
+            my-blog-manager/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: my-blog-manager/requirements-local.txt
+      - name: Install public reader dependencies
+        run: npm ci --no-audit --no-fund
+        working-directory: XHBlogs
+      - name: Install local manager dependencies
+        run: npm ci --no-audit --no-fund
+        working-directory: my-blog-manager
+      - name: Install local manager Python dependencies
+        run: python -m pip install -r my-blog-manager/requirements-local.txt
+      - name: Content and companion tests (offline)
+        run: node --test lib/*.test.mjs lib/server/*.test.mjs
+        working-directory: XHBlogs
+      - name: Local manager tests (temporary fixtures)
+        run: python -m unittest discover -s tests -p 'manager*_test.py' -v
+      - name: Build public reader
+        run: npm run build
+        working-directory: XHBlogs
+      - name: Build local manager
+        run: npm run build -- --webpack
+        working-directory: my-blog-manager
