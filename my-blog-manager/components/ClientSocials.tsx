@@ -30,19 +30,23 @@ function SocialBtn({ type, url, onClick }: { type: string, url?: string, onClick
 }
 
 export default function ClientSocials() {
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    alert(`✨ ${label}已复制到剪贴板: ${text}`);
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      alert(`✨ ${label}已复制到剪贴板: ${text}`);
+    } catch {
+      alert(`复制失败，请手动复制${label}: ${text}`);
+    }
   };
 
   return (
     <div className="flex gap-2 flex-wrap justify-center mt-4">
-      <SocialBtn type="github" url={siteConfig.social?.github} />
-      <SocialBtn type="gitee" url={siteConfig.social?.gitee} />
-      <SocialBtn type="google" url={siteConfig.social?.google} />
-      <SocialBtn type="email" onClick={() => copyToClipboard(siteConfig.social?.email || '', '邮箱')} />
-      <SocialBtn type="qq" onClick={() => copyToClipboard(siteConfig.social?.qq || '', 'QQ号')} />
-      <SocialBtn type="wechat" onClick={() => copyToClipboard(siteConfig.social?.wechat || '', '微信号')} />
+      {siteConfig.social?.github?.trim() && <SocialBtn type="github" url={siteConfig.social?.github} />}
+      {siteConfig.social?.gitee?.trim() && <SocialBtn type="gitee" url={siteConfig.social?.gitee} />}
+      {siteConfig.social?.google?.trim() && <SocialBtn type="google" url={siteConfig.social?.google} />}
+      {siteConfig.social?.email?.trim() && <SocialBtn type="email" onClick={() => copyToClipboard(siteConfig.social?.email || '', '邮箱')} />}
+      {siteConfig.social?.qq?.trim() && <SocialBtn type="qq" onClick={() => copyToClipboard(siteConfig.social?.qq || '', 'QQ号')} />}
+      {siteConfig.social?.wechat?.trim() && <SocialBtn type="wechat" onClick={() => copyToClipboard(siteConfig.social?.wechat || '', '微信号')} />}
     </div>
   );
 }

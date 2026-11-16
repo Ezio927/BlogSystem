@@ -10,9 +10,13 @@ export default function ProfileCard({ postCount, chatterCount, photoCount }: { p
   const router = useRouter();
   const { showToast } = useToast();
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    showToast(`✨ ${label}已复制到剪贴板: ${text}`, 'success');
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(`✨ ${label}已复制到剪贴板: ${text}`, 'success');
+    } catch {
+      showToast(`复制失败，请手动复制${label}: ${text}`, 'error');
+    }
   };
 
   return (
@@ -50,12 +54,12 @@ export default function ProfileCard({ postCount, chatterCount, photoCount }: { p
         </div>
 
         <div className="flex gap-2 md:gap-3 flex-wrap justify-center md:justify-end w-full md:w-auto" onClick={(e) => e.stopPropagation()}>
-          <SocialBtn type="github" url={siteConfig.social?.github} />
-          <SocialBtn type="gitee" url={siteConfig.social?.gitee} />
-          <SocialBtn type="google" url={siteConfig.social?.google} />
-          <SocialBtn type="email" onClick={() => copyToClipboard(siteConfig.social?.email || '', '邮箱')} />
-          <SocialBtn type="qq" onClick={() => copyToClipboard(siteConfig.social?.qq || '', 'QQ号')} />
-          <SocialBtn type="wechat" onClick={() => copyToClipboard(siteConfig.social?.wechat || '', '微信号')} />
+          {siteConfig.social?.github?.trim() && <SocialBtn type="github" url={siteConfig.social?.github} />}
+          {siteConfig.social?.gitee?.trim() && <SocialBtn type="gitee" url={siteConfig.social?.gitee} />}
+          {siteConfig.social?.google?.trim() && <SocialBtn type="google" url={siteConfig.social?.google} />}
+          {siteConfig.social?.email?.trim() && <SocialBtn type="email" onClick={() => copyToClipboard(siteConfig.social?.email || '', '邮箱')} />}
+          {siteConfig.social?.qq?.trim() && <SocialBtn type="qq" onClick={() => copyToClipboard(siteConfig.social?.qq || '', 'QQ号')} />}
+          {siteConfig.social?.wechat?.trim() && <SocialBtn type="wechat" onClick={() => copyToClipboard(siteConfig.social?.wechat || '', '微信号')} />}
         </div>
       </div>
     </div>

@@ -33,10 +33,10 @@ export const siteConfig = {
   photoWallImage: "https://bu.dusays.com/2026/03/24/69c1e38b4c370.jpg",
   cloudMusicIds: [] as string[],
   social: {
-    github: "",
+    github: "https://github.com/Ezio927",
     gitee: "",
     google: "",
-    email: "",
+    email: "ppppppapyrus@gmail.com",
     qq: "",
     wechat: "",
   },
