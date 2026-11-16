@@ -175,6 +175,54 @@ class LocalManagerTests(unittest.TestCase):
             self.assertFalse(storage.article_path(first['id'], 'post').exists())
             self.assertTrue(self.post('drafts/publish', draft)['success'])
 
+    def test_cleanup_failure_is_published_and_retained_draft_can_reopen_save(self):
+        with patch.dict(os.environ, {'EZIO_CMS_MODE': 'server'}):
+            first = self.save(id='cleanup-failed')
+            draft = self.post('drafts/get', {'id': first['id']})['draft']
+            with patch.object(storage, 'recover_delete', side_effect=OSError('cleanup unavailable')):
+                result = self.post('drafts/publish', draft)
+            self.assertTrue(result['success'], result)
+            self.assertIn('公开内容已发布', result['warning'])
+            self.assertIn('cleanup unavailable', result['warning'])
+            self.assertFalse(result['draftConflict'])
+            source = storage.article_path(first['id'], 'post')
+            self.assertEqual(result['sourceRevision'], storage.revision(source))
+            self.assertEqual(result['revision'], storage.revision(storage.draft_path(first['id'])))
+            reopened = self.post('drafts/get', {'id': first['id']})['draft']
+            self.assertEqual(reopened['sourceRevision'], result['sourceRevision'])
+            self.assertEqual(reopened['revision'], result['revision'])
+            self.assertIn('正文', reopened['content'])
+            saved = self.save(**{**reopened, 'content': '<p>继续编辑</p>'})
+            updated = self.post('drafts/publish', {**reopened, 'content': '<p>继续编辑</p>', 'revision': saved['revision']})
+            self.assertTrue(updated['success'], updated)
+            self.assertIn('继续编辑', source.read_text())
+            self.assertEqual(self.client.get('/api/status').json()['message'], '服务器后台已连接')
+
+    def test_cleanup_failure_does_not_acknowledge_concurrent_source_or_draft(self):
+        with patch.dict(os.environ, {'EZIO_CMS_MODE': 'server'}):
+            for changed in ('source', 'draft'):
+                first = self.save(id='concurrent-' + changed)
+                value = self.post('drafts/get', {'id': first['id']})['draft']
+                source = storage.article_path(first['id'], 'post')
+                draft = storage.draft_path(first['id'])
+                def concurrent_change(_path):
+                    if changed == 'source':
+                        source.write_text('another published version')
+                    else:
+                        import json
+                        data = json.loads(draft.read_text())
+                        data['content'] = '<p>another private version</p>'
+                        draft.write_text(json.dumps(data))
+                    raise OSError('cleanup failed after another change')
+                with patch.object(storage, 'recover_delete', side_effect=concurrent_change):
+                    result = self.post('drafts/publish', value)
+                self.assertTrue(result['success'], result)
+                self.assertTrue(result['draftConflict'])
+                self.assertIn('请重新打开', result['warning'])
+                stale_save = self.post('drafts/save', {**value, 'sourceRevision': result['sourceRevision']})
+                self.assertFalse(stale_save['success'])
+                self.assertIn('another', (source if changed == 'source' else draft).read_text())
+
     def test_server_publish_source_conflict_keeps_draft(self):
         with patch.dict(os.environ, {'EZIO_CMS_MODE': 'server'}):
             first = self.save(id='conflict')

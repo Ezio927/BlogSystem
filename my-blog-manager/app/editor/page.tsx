@@ -171,11 +171,11 @@ function EditorContent() {
               showToast(`发布失败，草稿已保留：${published.message || '请稍后重试'}`, 'error');
               return;
             }
-            setRevision(published.revision ?? null);
+            if (!published.draftConflict) setRevision(published.revision ?? null);
             setSourceRevision(published.sourceRevision);
             setPublishedURL(published.publishedURL);
             router.refresh();
-            showToast('已发布，公网博客可立即读取', 'success');
+            showToast(published.warning || '已发布，公网博客可立即读取', published.warning ? 'warning' : 'success');
           } else {
             addOperation({ type: 'publish_article', label: `发布: ${title || '关于我'}`, value });
             showToast('已保存草稿并加入待处理队列，请执行「更新本地」完成发布', 'info');
@@ -259,7 +259,7 @@ function EditorContent() {
 
           <aside className="w-[360px] shrink-0 bg-white/30 dark:bg-slate-800/40 backdrop-blur-[60px] rounded-[50px] shadow-2xl border border-white/30 dark:border-white/10 flex flex-col overflow-hidden">
             <MetaMatrix
-              serverMode={serverMode} publishedURL={publishedURL}
+              serverMode={serverMode} sourceRevision={sourceRevision} publishedURL={publishedURL}
               type={docType as any} tags={tags} setTags={setTags} cover={cover} setCover={setCover} summary={summary} setSummary={setSummary} mood={mood} setMood={setMood}
               allHistoryPostTags={historyPostTags} allHistoryChatterTags={historyChatterTags} isLoadingTags={isLoadingTags}
               allHistoryMoods={historyMoods} onSave={(isPublish) => handleSave(isPublish, false)} isSaving={isSaving} lastSaved={lastSaved} onOpenImageTool={() => { setImgToolTarget('cover'); setIsImgToolOpen(true); }}

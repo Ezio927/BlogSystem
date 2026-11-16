@@ -1,5 +1,6 @@
 """Draft JSON remains private; published Markdown is the authoring source."""
 import json
+import hashlib
 import os
 from urllib.parse import quote
 import re
@@ -128,8 +129,37 @@ def publish_document(data):
         meta['date'] = date
         text = '---\n' + yaml.safe_dump(meta, allow_unicode=True, sort_keys=False) + '---\n\n' + editor_html_to_markdown(data.get('content', ''))
         store.atomic_write(source, text)
-        store.recover_delete(draft)
-        return {'success': True, 'message': '已发布，公网博客可立即读取' if store.server_mode() else '已发布到本地源文件；同步 XHBlogs 后可更新博客', 'id': value, 'revision': None, 'sourceRevision': store.revision(source), 'publishedURL': published_url(value, kind)}
+        # Replacing the public source commits publication. Cleanup cannot undo it.
+        committed_revision = hashlib.sha256(text.encode('utf-8')).hexdigest()
+        warning = None
+        draft_conflict = False
+        draft_revision = data.get('revision')
+        try:
+            store.expect_revision(source, committed_revision)
+            store.expect_revision(draft, data.get('revision'))
+            store.recover_delete(draft)
+            draft_revision = None
+        except Exception as error:
+            warning = f'公开内容已发布，但草稿清理失败：{error}。'
+            try:
+                draft_revision = store.revision(draft)
+                if draft.exists():
+                    # Rebase only our unchanged, identical draft onto our committed source.
+                    # A concurrent change to either file must still cause a save conflict.
+                    store.expect_revision(draft, data.get('revision'))
+                    store.expect_revision(source, committed_revision)
+                    retained = json.loads(draft.read_text(encoding='utf-8'))
+                    fields = ('type', 'title', 'description', 'content', 'cover', 'tags', 'mood', 'date')
+                    if any(retained.get(key, [] if key == 'tags' else '') != data.get(key, [] if key == 'tags' else '') for key in fields):
+                        raise ValueError('保留的草稿与本次发布内容不同')
+                    retained['sourceRevision'] = committed_revision
+                    store.atomic_write(draft, json.dumps(retained, ensure_ascii=False, indent=2), recovery=False)
+                    draft_revision = store.revision(draft)
+                    warning += '草稿已保留并更新版本，可以继续编辑。'
+            except Exception as error:
+                draft_conflict = True
+                warning += f'草稿版本未能更新，请重新打开并核实内容：{error}。'
+        return {'success': True, 'message': '已发布，公网博客可立即读取' if store.server_mode() else '已发布到本地源文件；同步 XHBlogs 后可更新博客', 'id': value, 'revision': draft_revision, 'sourceRevision': committed_revision, 'publishedURL': published_url(value, kind), 'warning': warning, 'draftConflict': draft_conflict}
 
 
 @router.post('/publish')

@@ -31,7 +31,7 @@ async def local_requests_only(request: Request, call_next):
 
 @app.get('/api/status')
 def status():
-    return {'success': True, 'status': 'online', 'message': '本地写作后台已连接'}
+    return {'success': True, 'status': 'online', 'message': '服务器后台已连接' if store.server_mode() else '本地写作后台已连接'}
 
 
 for name, module in [('config', config), ('picbed', picbed), ('drafts', drafts), ('moments', moments), ('gallery', gallery), ('friends', friends), ('projects', projects), ('sync', sync)]:

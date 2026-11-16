@@ -123,8 +123,10 @@ function generateCalendarMatrix(year: number, month: number, targetDay: number) 
 
 export default async function ChatterDetail({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
-  const chatterData = await getChatterData(resolvedParams.slug);
-  const recentChatters = getRecentChatters(resolvedParams.slug);
+  let slug: string;
+  try { slug = decodeURIComponent(resolvedParams.slug); } catch { notFound(); }
+  const chatterData = await getChatterData(slug);
+  const recentChatters = getRecentChatters(slug);
 
   const dateObj = new Date(chatterData.date || '2026-03-24');
   const yearStr = dateObj.getFullYear();

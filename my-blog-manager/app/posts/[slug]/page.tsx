@@ -131,8 +131,10 @@ function getRecentPosts(currentSlug: string) {
 
 export default async function Post({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
-  const postData = await getPostData(resolvedParams.slug);
-  const recentPosts = getRecentPosts(resolvedParams.slug);
+  let slug: string;
+  try { slug = decodeURIComponent(resolvedParams.slug); } catch { notFound(); }
+  const postData = await getPostData(slug);
+  const recentPosts = getRecentPosts(slug);
 
   return (
     <div className="min-h-screen relative pb-20">

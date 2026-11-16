@@ -52,6 +52,8 @@ const article = (title, body) => `---\ntitle: ${title}\ndate: '2026-11-16'\ntags
   assert(!emptyHome.body.includes('PRIVATE_DRAFT_MUST_NOT_APPEAR'));
 
   // Publish after startup; these slugs never existed during build or first render.
+  write('posts/中文文章.md', article('ChinesePostFixture', '# Chinese post body'));
+  write('chatters/中文杂谈.md', article('ChineseChatterFixture', '# Chinese chatter body'));
   write('posts/runtime-new.md', article('RuntimePostFixture', '# Runtime body version one'));
   write('chatters/runtime-chatter.md', article('RuntimeChatterFixture', '# Runtime chatter body'));
   write('moments/runtime-moment.md', "---\nid: runtime-moment\ndate: '2026-11-16T00:00:00Z'\nimages: []\n---\n\nRuntimeMomentFixture\n");
@@ -59,6 +61,7 @@ const article = (title, body) => `---\ntitle: ${title}\ndate: '2026-11-16'\ntags
   for (const [route, marker] of [
     ['/', 'RuntimePostFixture'], ['/timeline', 'RuntimePostFixture'], ['/posts/runtime-new', 'Runtime body version one'],
     ['/chatter', 'RuntimeChatterFixture'], ['/chatter/runtime-chatter', 'Runtime chatter body'],
+    ['/posts/' + encodeURIComponent('中文文章'), 'Chinese post body'], ['/chatter/' + encodeURIComponent('中文杂谈'), 'Chinese chatter body'],
     ['/about', 'RuntimeAboutBodyFixture'], ['/moments', 'RuntimeMomentFixture'], ['/tree', 'RuntimePostFixture'],
   ]) {
     const response = await request(route);
@@ -70,12 +73,12 @@ const article = (title, body) => `---\ntitle: ${title}\ndate: '2026-11-16'\ntags
   const updated = await request('/posts/runtime-new');
   assert(updated.body.includes('Runtime body version two'), 'Published updates must bypass stale HTML');
   assert(!updated.body.includes('Runtime body version one'));
-  for (const route of ['/posts/missing', '/chatter/missing']) assert.equal((await request(route)).status, 404, route);
+  for (const route of ['/posts/missing', '/chatter/missing', '/posts/%252e%252e%252fmanager_data', '/chatter/%2e%2e%2fmanager_data', '/posts/%2525']) assert.equal((await request(route)).status, 404, route);
   const settings = await request('/settings');
   assert.equal(settings.status, 200);
   assert(settings.body.includes('修改后需要重新构建部署'));
   assert(!settings.body.includes('title="待处理操作"'), 'Server mode must hide the local queue');
-  console.log('Manager standalone: 8 persistent-content routes, new slugs, live update, 404s, private drafts and server settings passed.');
+  console.log('Manager standalone: 10 persistent-content routes, new slugs, live update, 404s, private drafts and server settings passed.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   if (child && child.exitCode === null) {
     child.kill('SIGTERM');
