@@ -1,3 +1,4 @@
+import { contentRoot } from '../../lib/contentRoot';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
@@ -7,7 +8,7 @@ import { siteConfig } from '../../siteConfig';
 import TimelineClient from '../../components/TimelineClient';
 
 export default function Timeline() {
-  const postsDirectory = path.join(process.cwd(), 'posts');
+  const postsDirectory = path.join(contentRoot(), 'posts');
   let posts: any[] = [];
   let tagCounts: Record<string, number> = {};
 

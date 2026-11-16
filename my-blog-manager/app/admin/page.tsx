@@ -2,9 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Navbar from '../../components/Navbar';
+import ServerSettingsNotice from '../../components/ServerSettingsNotice';
+import { useOperations } from '../../context/OperationContext';
 import { siteConfig } from '../../siteConfig'; // 确保路径正确，可能需要根据你的目录结构调整为 '../siteConfig'
 
 export default function AdminDashboard() {
+  const { serverMode } = useOperations();
   // 当前选中的功能模块
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -25,6 +29,8 @@ export default function AdminDashboard() {
     { id: 'gallery', name: '光影画廊', icon: '🖼️' },
     { id: 'settings', name: '系统核心配置', icon: '⚙️' },
   ];
+
+  if (serverMode) return <><Navbar /><main className="mx-auto mt-28 max-w-4xl p-6"><ServerSettingsNotice /></main></>;
 
   return (
     <div className="min-h-screen pt-20 pb-10 px-4 md:px-10 flex flex-col md:flex-row gap-6 max-w-[1600px] mx-auto relative z-10">

@@ -18,11 +18,11 @@ export default function Navbar({ previewOnly = false, compact = false }: { previ
   const [targetBlogPath, setTargetBlogPath] = useState("");
 
   const pathname = usePathname();
-  const { operations, removeOperation, clearOperations } = useOperations();
+  const { operations, removeOperation, clearOperations, serverMode } = useOperations();
   const { showToast } = useToast();
 
   useEffect(() => {
-    if (previewOnly) return;
+    if (previewOnly || serverMode) return;
     const fetchPath = async () => {
       try {
         const configRes = await fetch(`/backend_config.json?t=${Date.now()}`);
@@ -41,7 +41,7 @@ export default function Navbar({ previewOnly = false, compact = false }: { previ
       }
     };
     fetchPath();
-  }, [previewOnly]);
+  }, [previewOnly, serverMode]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -165,7 +165,7 @@ export default function Navbar({ previewOnly = false, compact = false }: { previ
        setTargetBlogPath(fallback);
     }
     setIsOpBoxOpen(false);
-    setSyncModalOpen(true);
+    if (!serverMode) setSyncModalOpen(true);
   };
 
   const executeSyncBlog = async () => {
@@ -215,7 +215,7 @@ export default function Navbar({ previewOnly = false, compact = false }: { previ
               ))}
             </nav>
 
-            <div className="relative">
+            {!serverMode && <div className="relative">
               <button disabled={previewOnly} title={previewOnly ? '预览副本未连接网站同步与发布' : '待处理操作'} onClick={() => setIsOpBoxOpen(!isOpBoxOpen)} className="relative w-10 h-10 rounded-xl bg-white/50 dark:bg-slate-800/50 flex items-center justify-center text-lg hover:scale-105 transition-all border border-white/20 shadow-sm cursor-pointer disabled:cursor-not-allowed disabled:opacity-40">
                 📥
                 {operations.length > 0 && (
@@ -263,7 +263,7 @@ export default function Navbar({ previewOnly = false, compact = false }: { previ
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </div>}
 
             <div className="flex items-center gap-2 ml-2 pl-6 border-l border-slate-300/50 dark:border-slate-600/50">
               <button onClick={handleMinimize} className="w-3.5 h-3.5 rounded-full bg-yellow-400 hover:bg-yellow-500 flex items-center justify-center group transition-colors shadow-sm cursor-pointer z-[101]">

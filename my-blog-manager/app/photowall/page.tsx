@@ -6,6 +6,7 @@ import PageTransition from '../../components/PageTransition';
 import { albums as initialAlbums, Album, Photo } from '../../data/albums';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Pencil, Trash2, Search, Image as ImageIcon, X, Save, AlertTriangle, Sparkles, Edit3, CloudUpload } from 'lucide-react';
+import ServerSettingsNotice from '../../components/ServerSettingsNotice';
 import { useOperations } from '../../context/OperationContext';
 import { useToast } from '../../components/ToastProvider';
 import FloatingImageTool from '../../components/editor/FloatingImageTool';
@@ -26,7 +27,7 @@ export default function PhotoWallPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const { addOperation } = useOperations();
+  const { addOperation, serverMode } = useOperations();
   const { showToast } = useToast();
   const [editableAlbums, setEditableAlbums] = useState<Album[]>(initialAlbums);
 
@@ -53,6 +54,8 @@ export default function PhotoWallPage() {
     const mp = editableAlbums.flatMap(album => album.photos.map(p => ({ ...p, albumName: album.title }))).filter(photo => photo.caption?.toLowerCase().includes(activeQuery));
     return { matchedAlbums: ma, matchedPhotos: mp };
   }, [activeQuery, editableAlbums]);
+
+  if (serverMode) return <><Navbar /><div className="mx-auto mt-28 max-w-4xl p-6"><ServerSettingsNotice /></div></>;
 
   return (
     <div className="min-h-screen relative pb-32">

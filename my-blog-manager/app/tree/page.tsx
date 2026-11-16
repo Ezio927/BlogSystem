@@ -1,3 +1,4 @@
+import { contentRoot } from '../../lib/contentRoot';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
@@ -6,7 +7,7 @@ import matter from 'gray-matter';
 import CreativeWorkshopClient from './CreativeWorkshopClient';
 
 function getLocalItems(directoryName: string, typeName: string) {
-  const dirPath = path.join(process.cwd(), directoryName);
+  const dirPath = path.join(contentRoot(), directoryName);
   let items: any[] = [];
   try {
     if (fs.existsSync(dirPath)) {

@@ -1,6 +1,8 @@
 """All CMS write tests use isolated temporary manager and sibling blog directories."""
 from pathlib import Path
 import sys
+import os
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -136,6 +138,87 @@ class LocalManagerTests(unittest.TestCase):
         source.write_text('keep published')
         self.assertTrue(self.post('drafts/delete', {'id': first['id']})['success'])
         self.assertEqual(source.read_text(), 'keep published')
+
+
+    def test_server_direct_publish_update_reopen_and_conflicts(self):
+        with patch.dict(os.environ, {'EZIO_CMS_MODE': 'server', 'EZIO_CMS_PUBLIC_URL': 'https://example.test/blog'}):
+            first = self.save(id='server-post')
+            value = self.post('drafts/get', {'id': first['id']})['draft']
+            published = self.post('drafts/publish', value)
+            self.assertTrue(published['success'], published)
+            self.assertEqual(published['publishedURL'], 'https://example.test/blog/posts/server-post')
+            self.assertIsNone(published['revision'])
+            self.assertFalse(storage.draft_path(first['id']).exists())
+            reopened = self.post('drafts/get', {'id': first['id']})['draft']
+            self.assertEqual(reopened['sourceRevision'], published['sourceRevision'])
+            self.assertIn('正文', reopened['content'])
+            saved = self.save(**{**reopened, 'content': '<h2>更新内容</h2>'})
+            update = {**reopened, 'content': '<h2>更新内容</h2>', 'revision': saved['revision']}
+            updated = self.post('drafts/publish', update)
+            self.assertTrue(updated['success'], updated)
+            self.assertNotEqual(updated['sourceRevision'], published['sourceRevision'])
+            self.assertFalse(self.post('drafts/publish', update)['success'])
+            final = self.post('drafts/get', {'id': first['id']})['draft']
+            self.assertIn('更新内容', final['content'])
+            self.assertTrue(list((self.manager / 'manager_data/recovery').rglob('server-post.md')))
+
+    def test_server_publish_failure_preserves_private_draft(self):
+        with patch.dict(os.environ, {'EZIO_CMS_MODE': 'server'}):
+            first = self.save(id='keep-private')
+            draft = self.post('drafts/get', {'id': first['id']})['draft']
+            before = storage.draft_path(first['id']).read_bytes()
+            with patch.object(storage, 'atomic_write', side_effect=OSError('disk unavailable')):
+                failed = self.post('drafts/publish', draft)
+            self.assertFalse(failed['success'])
+            self.assertIn('disk unavailable', failed['message'])
+            self.assertEqual(storage.draft_path(first['id']).read_bytes(), before)
+            self.assertFalse(storage.article_path(first['id'], 'post').exists())
+            self.assertTrue(self.post('drafts/publish', draft)['success'])
+
+    def test_server_publish_source_conflict_keeps_draft(self):
+        with patch.dict(os.environ, {'EZIO_CMS_MODE': 'server'}):
+            first = self.save(id='conflict')
+            draft = self.post('drafts/get', {'id': first['id']})['draft']
+            source = storage.article_path(first['id'], 'post')
+            source.parent.mkdir()
+            source.write_text('changed by another writer')
+            self.assertFalse(self.post('drafts/publish', draft)['success'])
+            self.assertTrue(storage.draft_path(first['id']).exists())
+            self.assertEqual(source.read_text(), 'changed by another writer')
+            for value in ('../escape', '/tmp/escape', 'a/b'):
+                self.assertFalse(self.post('drafts/publish', {**draft, 'id': value})['success'])
+
+    def test_server_about_and_chatter_publish_routes(self):
+        with patch.dict(os.environ, {'EZIO_CMS_MODE': 'server'}):
+            for kind, value, suffix in [('about', 'about', '/about'), ('chatter', 'new-chatter', '/chatter/new-chatter')]:
+                first = self.save(id=value, type=kind)
+                draft = self.post('drafts/get', {'id': first['id'], 'type': kind})['draft']
+                published = self.post('drafts/publish', draft)
+                self.assertTrue(published['success'], published)
+                self.assertTrue(published['publishedURL'].endswith(suffix))
+                self.assertTrue(storage.article_path(value, kind).exists())
+
+    def test_server_disables_old_sync_queue_and_static_settings(self):
+        with patch.dict(os.environ, {'EZIO_CMS_MODE': 'server'}):
+            for path in ('sync/execute', 'sync/check', 'drafts/sync_local', 'config/update', 'friends/sync', 'projects/sync', 'gallery/sync'):
+                response = self.client.post('/api/' + path, json={})
+                self.assertEqual(response.status_code, 409, response.text)
+                self.assertFalse(response.json()['success'])
+            self.assertEqual(self.client.get('/api/sync/config').status_code, 409)
+            self.assertFalse((self.manager / 'manager_data').exists())
+            rejected = self.client.post('/api/drafts/publish', json={}, headers={'Origin': 'https://evil.example'})
+            self.assertEqual(rejected.status_code, 403)
+            rejected = self.client.post('/api/drafts/publish', json={}, headers={**ORIGIN, 'Host': 'evil.example:3402'})
+            self.assertEqual(rejected.status_code, 403)
+
+    def test_content_root_environment_is_read_at_backend_startup(self):
+        root = self.manager / 'persistent-content'
+        env = {**os.environ, 'EZIO_CMS_ROOT': str(root)}
+        result = subprocess.run([sys.executable, '-c', 'from cms_core.storage import ROOT; print(ROOT)'],
+                                cwd=Path(__file__).resolve().parents[1] / 'my-blog-manager',
+                                env=env, capture_output=True, text=True, check=True)
+        self.assertEqual(result.stdout.strip(), str(root))
+        self.assertFalse(root.exists())
 
 
 if __name__ == '__main__':

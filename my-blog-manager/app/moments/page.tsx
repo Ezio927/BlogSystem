@@ -1,3 +1,4 @@
+import { contentRoot } from '../../lib/contentRoot';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
@@ -17,8 +18,8 @@ export default function MomentsPage() {
   try {
     // 🌟 终极防漏绝招：同时扫描两个可能的文件夹，把所有的说说都抓出来！
     const possibleDirs = [
-      path.join(process.cwd(), 'posts', 'moments'),
-      path.join(process.cwd(), 'moments')
+      path.join(contentRoot(), 'posts', 'moments'),
+      path.join(contentRoot(), 'moments')
     ];
 
     possibleDirs.forEach(dir => {

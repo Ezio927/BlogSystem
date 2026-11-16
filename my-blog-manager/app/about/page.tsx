@@ -1,3 +1,4 @@
+import { contentRoot } from '../../lib/contentRoot';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
@@ -25,7 +26,7 @@ import AboutClient from '../../components/AboutClient';
 
 // 🌟 读取指定目录下的 markdown 文件，并提取属性
 function getDirActivities(dirName: string, typeLabel: '文章' | '杂谈' | '说说', linkPrefix: string) {
-  const dirPath = path.join(process.cwd(), dirName);
+  const dirPath = path.join(contentRoot(), dirName);
   if (!fs.existsSync(dirPath)) return [];
 
   const files = fs.readdirSync(dirPath).filter(f => f.endsWith('.md'));
@@ -45,7 +46,7 @@ function getDirActivities(dirName: string, typeLabel: '文章' | '杂谈' | '说
 }
 
 export default async function AdminAboutPage() {
-  const fullPath = path.join(process.cwd(), 'app', 'about', 'about.md');
+  const fullPath = path.join(contentRoot(), 'app', 'about', 'about.md');
   let contentHtml = "博主很懒，还没有写自我介绍哦...";
   let coverImage = "https://bu.dusays.com/2026/03/24/69c23dc278c78.jpg";
 

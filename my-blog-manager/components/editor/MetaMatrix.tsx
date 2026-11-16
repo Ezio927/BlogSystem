@@ -4,6 +4,8 @@ import React, { useState, KeyboardEvent } from 'react';
 import { ImageIcon, Tag, FileText, X, Clock, CloudUpload, Smile, Save, Send } from 'lucide-react';
 
 interface Props {
+  serverMode?: boolean;
+  publishedURL?: string | null;
   type: 'post' | 'chatter' | 'about';
   tags: string[]; setTags: React.Dispatch<React.SetStateAction<string[]>>;
   cover: string; setCover: (val: string) => void;
@@ -20,7 +22,7 @@ interface Props {
 }
 
 export default function MetaMatrix({
-  type, tags, setTags, cover, setCover, summary, setSummary, mood, setMood,
+  serverMode, publishedURL, type, tags, setTags, cover, setCover, summary, setSummary, mood, setMood,
   allHistoryPostTags, allHistoryChatterTags, isLoadingTags, allHistoryMoods, onSave, isSaving, lastSaved, onOpenImageTool
 }: Props) {
   const [tagInput, setTagInput] = useState('');
@@ -154,8 +156,10 @@ export default function MetaMatrix({
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400">
             <Clock size={12} />
-            {isSaving ? "正在落盘至本地系统..." : lastSaved ? `最近落盘: ${lastSaved}` : "文档尚未在本地生成"}
+            {isSaving ? "正在保存…" : lastSaved ? `最近保存: ${lastSaved}` : "文档尚未保存"}
           </div>
+          {serverMode && <p className="text-xs text-slate-500">草稿仅私有保存；正式发布后公网博客立即读取，无需同步。</p>}
+          {publishedURL && <a href={publishedURL} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 underline">查看已发布内容</a>}
           <div className="flex gap-3">
             <button
               onClick={() => onSave(false)} disabled={isSaving}

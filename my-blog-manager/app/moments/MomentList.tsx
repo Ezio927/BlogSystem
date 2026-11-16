@@ -25,7 +25,7 @@ export default function MomentList({ moments, authorName, avatarUrl }: any) {
   const [lightbox, setLightbox] = useState<{ images: string[], index: number } | null>(null);
 
   const { showToast } = useToast();
-  const { operations, addOperation, removeOperation } = useOperations();
+  const { operations, addOperation, removeOperation, serverMode } = useOperations();
 
   const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [newMoment, setNewMoment] = useState({ content: '', location: '', images: [] as string[] });
@@ -160,7 +160,7 @@ export default function MomentList({ moments, authorName, avatarUrl }: any) {
       return;
     }
     setIsSubmitting(true);
-    showToast("🚀 正在强行直连 Python 引擎...", "info");
+    showToast("正在发布说说…", "info");
 
     try {
       const configRes = await fetch(`/backend_config.json?t=${Date.now()}`);
@@ -512,13 +512,13 @@ export default function MomentList({ moments, authorName, avatarUrl }: any) {
                   取消
                 </button>
 
-                <button
+                {!serverMode && <button
                   onClick={handleQueueMoment}
                   disabled={isUploading || isSubmitting}
                   className="flex-[1.5] py-4 px-2 rounded-2xl bg-slate-800 text-white font-black uppercase tracking-[0.1em] text-xs shadow-lg hover:bg-slate-900 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <Send size={16} /> 加入队列
-                </button>
+                </button>}
 
                 <button
                   onClick={handleDirectPublish}

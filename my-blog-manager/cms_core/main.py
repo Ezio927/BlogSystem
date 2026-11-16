@@ -1,7 +1,8 @@
-"""Loopback-only browser CMS. Remote publishing and Agent reception are absent."""
+"""Loopback-only authoring API for local recovery and private server sessions."""
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from cms_core import storage as store
 from cms_core.api import config, picbed, drafts, moments, gallery, friends, projects, sync
 
 app = FastAPI(title='Ezio Local CMS', version='1.0.0')
@@ -19,6 +20,12 @@ async def local_requests_only(request: Request, call_next):
         return JSONResponse({'success': False, 'message': '拒绝跨站请求'}, status_code=403)
     if request.method not in ('GET', 'HEAD', 'OPTIONS') and origin not in ORIGINS:
         return JSONResponse({'success': False, 'message': '写入请求必须来自本地管理端 Origin'}, status_code=403)
+    if store.server_mode():
+        path = request.url.path
+        if path.startswith('/api/sync/') or path == '/api/drafts/sync_local':
+            return JSONResponse({'success': False, 'message': '服务器模式直接发布内容，不支持本地同步或待处理队列'}, status_code=409)
+        if any(path.startswith('/api/' + name + '/') for name in ('config', 'gallery', 'friends', 'projects')):
+            return JSONResponse({'success': False, 'message': '网站配置由版本管理，修改后需要重新构建部署；此后台只直接发布内容'}, status_code=409)
     return await call_next(request)
 
 

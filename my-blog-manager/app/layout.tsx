@@ -18,6 +18,9 @@ import GlobalSnow from '../components/GlobalSnow';
 import Script from 'next/script';
 
 
+// Authoring pages read the shared content directory on every request.
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: siteConfig.title,
   description: siteConfig.bio,
@@ -54,7 +57,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 
       <body className="w-screen overflow-x-hidden min-h-full flex flex-col relative transition-colors duration-1000 bg-slate-50 dark:bg-slate-950 font-serif">
         <ThemeProvider>
-          <OperationProvider>
+          <OperationProvider serverMode={process.env.EZIO_CMS_MODE === 'server'}>
             <ToastProvider>
               <SplashScreen />
                 <div id="app-mount-root" className="flex-1 flex flex-col transition-opacity duration-1000">

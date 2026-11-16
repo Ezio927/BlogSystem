@@ -1,3 +1,5 @@
+import { notFound } from 'next/navigation';
+import { contentRoot } from '../../../lib/contentRoot';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
@@ -23,19 +25,12 @@ import ClientSocials from '../../../components/ClientSocials';
 import BackButton from '../../../components/BackButton';
 import Comments from '../../../components/Comments';
 
-export async function generateStaticParams() {
-  const chattersDirectory = path.join(process.cwd(), 'chatters');
-  if (!fs.existsSync(chattersDirectory)) return [];
-  const filenames = fs.readdirSync(chattersDirectory);
-  return filenames
-    .filter((name) => name.endsWith('.md'))
-    .map((name) => ({
-      slug: name.replace(/\.md$/, ''),
-    }));
-}
+
 
 async function getChatterData(slug: string) {
-  const fullPath = path.join(process.cwd(), 'chatters', `${slug}.md`);
+  if (!/^[\p{L}\p{N}_-]{1,180}$/u.test(slug)) notFound();
+  const fullPath = path.join(contentRoot(), 'chatters', `${slug}.md`);
+  if (!fs.existsSync(fullPath) || fs.lstatSync(fullPath).isSymbolicLink()) notFound();
   const fileContents = fs.readFileSync(fullPath, 'utf8');
 
   let { data, content } = matter(fileContents);
@@ -101,7 +96,7 @@ async function getChatterData(slug: string) {
 }
 
 function getRecentChatters(currentSlug: string) {
-  const chattersDirectory = path.join(process.cwd(), 'chatters');
+  const chattersDirectory = path.join(contentRoot(), 'chatters');
   let fileNames: string[] = [];
   try { fileNames = fs.readdirSync(chattersDirectory).filter(f => f.endsWith('.md')); } catch(e) {}
   if (!fileNames) return [];

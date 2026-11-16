@@ -1,3 +1,5 @@
+import { notFound } from 'next/navigation';
+import { contentRoot } from '../../../lib/contentRoot';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
@@ -23,18 +25,7 @@ import ClientTOC from '../../../components/ClientTOC';
 import BackButton from '../../../components/BackButton';
 import Comments from '../../../components/Comments';
 
-export async function generateStaticParams() {
-  const postsDirectory = path.join(process.cwd(), 'posts');
-  if (!fs.existsSync(postsDirectory)) return [];
 
-  const filenames = fs.readdirSync(postsDirectory);
-
-  return filenames
-    .filter((name) => name.endsWith('.md'))
-    .map((name) => ({
-      slug: name.replace(/\.md$/, ''),
-    }));
-}
 
 function extractToc(content: string) {
   const toc = [];
@@ -64,7 +55,9 @@ function extractToc(content: string) {
 }
 
 async function getPostData(slug: string) {
-  const fullPath = path.join(process.cwd(), 'posts', `${slug}.md`);
+  if (!/^[\p{L}\p{N}_-]{1,180}$/u.test(slug)) notFound();
+  const fullPath = path.join(contentRoot(), 'posts', `${slug}.md`);
+  if (!fs.existsSync(fullPath) || fs.lstatSync(fullPath).isSymbolicLink()) notFound();
   const fileContents = fs.readFileSync(fullPath, 'utf8');
   let { data, content } = matter(fileContents);
 
@@ -124,7 +117,7 @@ async function getPostData(slug: string) {
 }
 
 function getRecentPosts(currentSlug: string) {
-  const postsDirectory = path.join(process.cwd(), 'posts');
+  const postsDirectory = path.join(contentRoot(), 'posts');
   let fileNames: string[] = [];
   try { fileNames = fs.readdirSync(postsDirectory).filter(f => f.endsWith('.md')); } catch(e) {}
   if (!fileNames) return [];

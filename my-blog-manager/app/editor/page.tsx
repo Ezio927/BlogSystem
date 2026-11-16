@@ -17,7 +17,7 @@ function EditorContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { showToast } = useToast();
-  const { addOperation } = useOperations();
+  const { addOperation, serverMode } = useOperations();
 
   const [docType, setDocType] = useState<string>(searchParams.get('type') || 'post');
   const [currentDocId, setCurrentDocId] = useState(
@@ -33,6 +33,8 @@ function EditorContent() {
   const [date, setDate] = useState('');
   const [revision, setRevision] = useState<string | null>(null);
   const [sourceRevision, setSourceRevision] = useState<string | null>(null);
+  const [publishedURL, setPublishedURL] = useState<string | null>(null);
+  const savedId = useRef<string | null>(null);
 
   const [historyPostTags, setHistoryPostTags] = useState<string[]>([]);
   const [historyChatterTags, setHistoryChatterTags] = useState<string[]>([]);
@@ -53,7 +55,7 @@ function EditorContent() {
     const fetchTags = async () => {
       setIsLoadingTags(true);
       try {
-        const configRes = await fetch(`/backend_config.json`);
+        const configRes = await fetch(`/backend_config.json`, { cache: 'no-store' });
         const config = await configRes.json();
         const res = await fetch(`http://127.0.0.1:${config.api_port}/api/drafts/all_tags`);
         const data = await res.json();
@@ -68,6 +70,7 @@ function EditorContent() {
   }, []);
 
   useEffect(() => {
+    if (savedId.current === currentDocId) { savedId.current = null; return; }
     if (currentDocId !== 'new') {
       const loadDraft = async () => {
         try {
@@ -94,7 +97,7 @@ function EditorContent() {
             setContent(data.draft.content || '');
 
             setTimeout(() => setHasUnsavedChanges(false), 500);
-            showToast("✅ 已读取本地源数据", "success");
+            showToast("✅ 已读取源内容", "success");
           } else {
              showToast(data.message || "❌ 未找到草稿或原文件", "error");
           }
@@ -144,7 +147,7 @@ function EditorContent() {
 
     setIsSaving(true);
     try {
-      const configRes = await fetch(`/backend_config.json`);
+      const configRes = await fetch(`/backend_config.json`, { cache: 'no-store' });
       const config = await configRes.json();
       const res = await fetch(`http://127.0.0.1:${config.api_port}/api/drafts/save`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
@@ -154,16 +157,29 @@ function EditorContent() {
         setRevision(data.revision);
         setSourceRevision(data.sourceRevision ?? null);
         if (currentDocId === 'new') {
+          savedId.current = data.id;
           setCurrentDocId(data.id);
           window.history.replaceState(null, '', `/editor?id=${data.id}&type=${docType}`);
         }
         if (isPublish) {
-          addOperation({
-            type: 'publish_article',
-            label: `发布: ${title || '关于我'}`,
-            value: { ...payload, id: data.id, revision: data.revision, sourceRevision: data.sourceRevision }
-          });
-          showToast('已保存草稿并加入待处理队列，请执行「更新本地」完成发布', 'info');
+          const value = { ...payload, id: data.id, revision: data.revision, sourceRevision: data.sourceRevision };
+          if (serverMode || config.mode === 'server') {
+            const published = await (await fetch(`http://127.0.0.1:${config.api_port}/api/drafts/publish`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value)
+            })).json();
+            if (!published.success) {
+              showToast(`发布失败，草稿已保留：${published.message || '请稍后重试'}`, 'error');
+              return;
+            }
+            setRevision(published.revision ?? null);
+            setSourceRevision(published.sourceRevision);
+            setPublishedURL(published.publishedURL);
+            router.refresh();
+            showToast('已发布，公网博客可立即读取', 'success');
+          } else {
+            addOperation({ type: 'publish_article', label: `发布: ${title || '关于我'}`, value });
+            showToast('已保存草稿并加入待处理队列，请执行「更新本地」完成发布', 'info');
+          }
         }
         setLastSaved(new Date().toLocaleTimeString());
         setHasUnsavedChanges(false);
@@ -175,7 +191,7 @@ function EditorContent() {
       } else {
         showToast(data.message || "保存失败", "error");
       }
-    } catch (e) { showToast("❌ 保存失败", "error"); }
+    } catch (e) { showToast("连接中断，编辑内容仍保留在此页；已保存的草稿可在草稿箱重开，请核实发布结果后重试", "error"); }
     finally { setIsSaving(false); }
   };
 
@@ -243,6 +259,7 @@ function EditorContent() {
 
           <aside className="w-[360px] shrink-0 bg-white/30 dark:bg-slate-800/40 backdrop-blur-[60px] rounded-[50px] shadow-2xl border border-white/30 dark:border-white/10 flex flex-col overflow-hidden">
             <MetaMatrix
+              serverMode={serverMode} publishedURL={publishedURL}
               type={docType as any} tags={tags} setTags={setTags} cover={cover} setCover={setCover} summary={summary} setSummary={setSummary} mood={mood} setMood={setMood}
               allHistoryPostTags={historyPostTags} allHistoryChatterTags={historyChatterTags} isLoadingTags={isLoadingTags}
               allHistoryMoods={historyMoods} onSave={(isPublish) => handleSave(isPublish, false)} isSaving={isSaving} lastSaved={lastSaved} onOpenImageTool={() => { setImgToolTarget('cover'); setIsImgToolOpen(true); }}

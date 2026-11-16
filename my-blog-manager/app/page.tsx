@@ -1,3 +1,4 @@
+import { contentRoot } from '../lib/contentRoot';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
@@ -33,7 +34,7 @@ function formatUpdateTime(dateString: string) {
 }
 
 export default function Home() {
-  const postsDirectory = path.join(process.cwd(), 'posts');
+  const postsDirectory = path.join(contentRoot(), 'posts');
   let allPosts: any[] = [];
   try {
     if (fs.existsSync(postsDirectory)) {
@@ -62,7 +63,7 @@ export default function Home() {
   } catch (e) {}
   const top5Posts = allPosts.length > 0 ? allPosts.slice(0, 5) : [{ slug: 'none', title: '暂无文章', description: '快去写第一篇吧！', cover: siteConfig.defaultPostCover, date: '', formattedDate: '' }];
 
-  const chattersDirectory = path.join(process.cwd(), 'chatters');
+  const chattersDirectory = path.join(contentRoot(), 'chatters');
   let allChatters: any[] = [];
   try {
     if (fs.existsSync(chattersDirectory)) {

@@ -1,5 +1,7 @@
 """Draft JSON remains private; published Markdown is the authoring source."""
 import json
+import os
+from urllib.parse import quote
 import re
 import time
 from datetime import datetime
@@ -104,6 +106,40 @@ async def delete_draft(request: Request):
         return {'success': False, 'message': str(error)}
 
 
+def published_url(value, kind):
+    base = os.environ.get('EZIO_CMS_PUBLIC_URL', 'https://47.101.37.232/blog').rstrip('/')
+    route = '/about' if kind == 'about' else ('/posts/' if kind == 'post' else '/chatter/') + quote(value, safe='')
+    return base + route
+
+
+def publish_document(data):
+    with store.LOCK:
+        kind = store.doc_type(data.get('type', 'post'))
+        value = 'about' if kind == 'about' else data.get('id')
+        if not value or value == 'new':
+            value = 'post_' + uuid4().hex
+        value = normalize_id(value)
+        source = store.article_path(value, kind)
+        draft = store.draft_path(value)
+        store.expect_revision(source, data.get('sourceRevision'))
+        store.expect_revision(draft, data.get('revision'))
+        meta = {key: data.get(key, [] if key == 'tags' else '') for key in ('title', 'tags', 'mood', 'cover', 'description')}
+        date = str(data.get('date') or datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        meta['date'] = date
+        text = '---\n' + yaml.safe_dump(meta, allow_unicode=True, sort_keys=False) + '---\n\n' + editor_html_to_markdown(data.get('content', ''))
+        store.atomic_write(source, text)
+        store.recover_delete(draft)
+        return {'success': True, 'message': '已发布，公网博客可立即读取' if store.server_mode() else '已发布到本地源文件；同步 XHBlogs 后可更新博客', 'id': value, 'revision': None, 'sourceRevision': store.revision(source), 'publishedURL': published_url(value, kind)}
+
+
+@router.post('/publish')
+async def publish_direct(request: Request):
+    try:
+        return publish_document(await request.json())
+    except Exception as error:
+        return {'success': False, 'message': str(error)}
+
+
 @router.post('/sync_local')
 async def publish(request: Request):
     try:
@@ -111,24 +147,7 @@ async def publish(request: Request):
         operations = payload.get('operations', [])
         if len(operations) != 1 or operations[0].get('type') != 'publish_article':
             raise ValueError('每次仅支持发布一个文档')
-        data = operations[0].get('value', {})
-        with store.LOCK:
-            kind = store.doc_type(data.get('type', 'post'))
-            value = 'about' if kind == 'about' else data.get('id')
-            if not value or value == 'new':
-                value = 'post_' + uuid4().hex
-            value = normalize_id(value)
-            source = store.article_path(value, kind)
-            draft = store.draft_path(value)
-            store.expect_revision(source, data.get('sourceRevision'))
-            store.expect_revision(draft, data.get('revision'))
-            meta = {key: data.get(key, [] if key == 'tags' else '') for key in ('title', 'tags', 'mood', 'cover', 'description')}
-            date = str(data.get('date') or datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-            meta['date'] = date
-            text = '---\n' + yaml.safe_dump(meta, allow_unicode=True, sort_keys=False) + '---\n\n' + editor_html_to_markdown(data.get('content', ''))
-            store.atomic_write(source, text)
-            store.recover_delete(draft)
-            return {'success': True, 'message': '已发布到本地源文件；同步 XHBlogs 后可更新博客', 'id': value, 'revision': None, 'sourceRevision': store.revision(source)}
+        return publish_document(operations[0].get('value', {}))
     except Exception as error:
         return {'success': False, 'message': str(error)}
 

@@ -1,3 +1,4 @@
+import { contentRoot } from '../../lib/contentRoot';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
@@ -11,15 +12,13 @@ export const metadata = {
 };
 
 export default function ChatterPage() {
-  const chattersDirectory = path.join(process.cwd(), 'chatters');
+  const chattersDirectory = path.join(contentRoot(), 'chatters');
   let chatters: any[] = [];
 
   try {
-    if (!fs.existsSync(chattersDirectory)) {
-      fs.mkdirSync(chattersDirectory);
-    }
-
-    const fileNames = fs.readdirSync(chattersDirectory).filter(fileName => fileName.endsWith('.md'));
+    const fileNames = fs.existsSync(chattersDirectory)
+      ? fs.readdirSync(chattersDirectory).filter(fileName => fileName.endsWith('.md'))
+      : [];
 
     chatters = fileNames.map(fileName => {
       const slug = fileName.replace(/\.md$/, '');

@@ -22,7 +22,7 @@ function readPreferences(value: { activePet?: unknown; todoEnabled?: unknown; wh
 }
 
 async function siteSelectionPath() {
-  const root = path.resolve(process.env.XHS_MANAGER_ROOT || process.cwd());
+  const root = path.resolve(process.env.XHBLOGS_CONTENT_ROOT || process.env.XHS_MANAGER_ROOT || process.cwd());
   const website = root;
   const filename = path.join(root, 'data/petSelection.json');
   for (const candidate of [root, path.join(root, 'data'), filename]) {
@@ -43,6 +43,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (process.env.EZIO_CMS_MODE === 'server') return reply({ detail: '宠物配置由版本管理，修改后需要重新构建部署。' }, 409);
   const host = request.headers.get('host') ?? '';
   if (!localHost.test(host) || request.headers.get('origin') !== new URL(request.url).protocol + '//' + host) {
     return reply({ detail: '只允许从本机控制台保存。' }, 403);

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BackButton from '../../components/BackButton';
 import { friendsData as initialFriends, Friend } from '../../data/friends';
 import { Plus, Pencil, Trash2, AlertTriangle, Save, Edit3, X, CloudUpload, Sparkles } from 'lucide-react';
+import ServerSettingsNotice from '../../components/ServerSettingsNotice';
 import { useOperations } from '../../context/OperationContext';
 import { useToast } from '../../components/ToastProvider';
 import FloatingImageTool from '../../components/editor/FloatingImageTool';
@@ -24,7 +25,7 @@ const itemVariants = {
 };
 
 export default function FriendsBoard() {
-  const { addOperation } = useOperations();
+  const { addOperation, serverMode } = useOperations();
   const { showToast } = useToast();
 
   const [editableFriends, setEditableFriends] = useState<Friend[]>(initialFriends);
@@ -82,6 +83,8 @@ export default function FriendsBoard() {
     syncToQueue(next);
     setDeleteModal({ isOpen: false, id: null, name: null });
   };
+
+  if (serverMode) return <div className="mx-auto mt-28 max-w-4xl p-6"><ServerSettingsNotice /></div>;
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-10 py-10 relative z-10">

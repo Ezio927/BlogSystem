@@ -8,7 +8,15 @@ import tempfile
 import threading
 from uuid import uuid4
 
-ROOT = Path(__file__).resolve().parents[1]
+def configured_root():
+    return Path(os.environ.get('EZIO_CMS_ROOT') or Path(__file__).resolve().parents[1]).expanduser().absolute()
+
+
+def server_mode():
+    return os.environ.get('EZIO_CMS_MODE') == 'server'
+
+
+ROOT = configured_root()
 LOCK = threading.RLock()
 
 

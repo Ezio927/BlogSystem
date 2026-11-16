@@ -16,6 +16,7 @@ export interface Operation {
 }
 
 interface OperationContextType {
+  serverMode: boolean;
   operations: Operation[];
   addOperation: (op: Omit<Operation, 'id' | 'timestamp'> & { id?: string; timestamp?: string; key?: string }) => void;
   removeOperation: (id: string) => void;
@@ -24,11 +25,12 @@ interface OperationContextType {
 
 const OperationContext = createContext<OperationContextType | undefined>(undefined);
 
-export function OperationProvider({ children }: { children: React.ReactNode }) {
+export function OperationProvider({ children, serverMode = false }: { children: React.ReactNode; serverMode?: boolean }) {
   const [operations, setOperations] = useState<Operation[]>([]);
 
   // 添加操作（如果同类型的操作已存在，则覆盖，防止重复积攒）
   const addOperation = (op: Omit<Operation, 'id' | 'timestamp'> & { id?: string; timestamp?: string; key?: string }) => {
+    if (serverMode) throw new Error('服务器模式不使用队列，请直接发布内容；网站配置需要构建部署');
     const newOp: Operation = {
       ...op,
       id: Math.random().toString(36).substr(2, 9),
@@ -53,7 +55,7 @@ export function OperationProvider({ children }: { children: React.ReactNode }) {
   const clearOperations = () => setOperations([]);
 
   return (
-    <OperationContext.Provider value={{ operations, addOperation, removeOperation, clearOperations }}>
+    <OperationContext.Provider value={{ serverMode, operations, addOperation, removeOperation, clearOperations }}>
       {children}
     </OperationContext.Provider>
   );

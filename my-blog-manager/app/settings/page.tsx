@@ -8,6 +8,7 @@ import Navbar from '../../components/Navbar';
 import PageTransition from '../../components/PageTransition';
 import { ToastProvider, useToast } from '../../components/ToastProvider';
 
+import ServerSettingsNotice from '../../components/ServerSettingsNotice';
 import ProfileSection from '../../components/settings/ProfileSection';
 import BackgroundSection from '../../components/settings/BackgroundSection';
 import GallerySection from '../../components/settings/GallerySection';
@@ -18,7 +19,7 @@ import DanmakuSection from '../../components/settings/DanmakuSection';
 import FooterSection from '../../components/settings/FooterSection';
 
 function SettingsContent() {
-  const { operations, addOperation } = useOperations();
+  const { operations, addOperation, serverMode } = useOperations();
   const [activeTab, setActiveTab] = useState('profile');
   const [backendMode, setBackendMode] = useState<'checking' | 'preview' | 'live' | 'offline'>('checking');
   const { showToast } = useToast();
@@ -77,6 +78,7 @@ function SettingsContent() {
         const configRes = await fetch(`/backend_config.json?t=${Date.now()}`, { signal: controller.signal });
         if (!configRes.ok) throw new Error('无法读取本机连接设置');
         const configData = await configRes.json();
+        if (configData.mode === 'server') return;
         if (configData.previewOnly === true) {
           setBackendMode('preview');
           return;
@@ -142,9 +144,11 @@ function SettingsContent() {
     { id: 'danmaku', name: '全站弹幕设置', icon: '⚡' },
     { id: 'comment', name: '评论系统配置', icon: '💬' },
     { id: 'aicat', name: '小鲸鱼', icon: '🐳' },
-    { id: 'repo', name: '本地同步', icon: '🚀' },
+    { id: 'repo', name: serverMode ? '服务器发布' : '本地同步', icon: '🚀' },
   ];
 
+
+  if (serverMode) return <div className="min-h-screen pb-10"><Navbar compact /><main className="mx-auto mt-28 max-w-4xl p-6"><ServerSettingsNotice /></main></div>;
 
   return (
     <div className="min-h-screen relative pb-10">
