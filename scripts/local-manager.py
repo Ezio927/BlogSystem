@@ -14,6 +14,9 @@ ROOT = Path(__file__).resolve().parents[1] / 'my-blog-manager'
 
 
 def main():
+    migrated = Path.home() / '.config/ezio-blog/server-authoring'
+    if migrated.exists() and os.environ.get('EZIO_ALLOW_LOCAL_MANAGER') != '1':
+        raise RuntimeError('Writing has moved to ECS. Run bash scripts/connect-manager.sh and open http://127.0.0.1:3401. Local content is an archive; use EZIO_ALLOW_LOCAL_MANAGER=1 only for deliberate recovery/testing.')
     python = ROOT / '.venv/bin/python'
     next_bin = ROOT / 'node_modules/next/dist/bin/next'
     if not python.is_file() or not next_bin.is_file():

@@ -16,6 +16,7 @@ ssh shanghai bash -s -- "$release" <<'REMOTE'
 set -euo pipefail
 release=$1
 root="$HOME/apps/ezio-blog"
+test -d "$root/content/posts" || { echo 'Persistent content is missing; migrate it first. Releases never initialize or replace articles.' >&2; exit 1; }
 address=$(tailscale ip -4)
 [[ $address == 100.* ]] || { echo 'Expected private Tailscale address' >&2; exit 1; }
 mkdir "$root/releases/$release"
@@ -39,7 +40,7 @@ fi
 ln -sfn "$root/releases/$release" "$root/current"
 printf '%s\n' "$previous" > "$root/previous-release"
 printf '%s\n' "$release" > "$root/managed-preview"
-tmux new-session -d -s ezio-blog-preview -c "$root/current" "exec env HOSTNAME=$address PORT=3400 '$root/runtime/node-$release' --env-file-if-exists='$root/private/chat.env' '$root/current/server.js' >> '$root/preview.log' 2>&1"
+tmux new-session -d -s ezio-blog-preview -c "$root/current" "exec env HOSTNAME=$address PORT=3400 XHBLOGS_CONTENT_ROOT='$root/content' '$root/runtime/node-$release' --env-file-if-exists='$root/private/chat.env' '$root/current/server.js' >> '$root/preview.log' 2>&1"
 for attempt in {1..20}; do
   if curl --noproxy '*' -fsS "http://$address:3400/blog" -o /dev/null 2>/dev/null; then
     printf 'Blog origin: http://%s:3400/blog\nPublic URL: https://47.101.37.232/blog\nRelease: %s\n' "$address" "$release"
