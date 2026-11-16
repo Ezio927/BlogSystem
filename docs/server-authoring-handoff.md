@@ -48,3 +48,13 @@ Astra独立审查初版发现：发布提交后的草稿清理异常被误报失
 - 本轮额外人工介入0次。没有调用DeepSeek工程Worker或产品模型；Sol负责应用，Astra独立审查，主上下文负责集成与运行验证。
 
 日常操作与发布/恢复命令见 [usage.md](usage.md)。后续维护先核对服务器content，不能把本地旧posts/草稿当作最新源。
+
+## 2026-11-17：自有图片上传
+
+应用提交 `b74adff`，公网 release `20261116T153737Z-b74adff`，后台 release `20261116T153738Z-b74adff`。封面文件选择/拖拽和正文图片工作台改用私网 `/api/media/upload`，不读取图床 Token。上传到持久 `content/media`，公网 `/blog/media/<uuid>.<ext>` 运行时只读，后台也有对应只读媒体路由。无需更改 Nginx 或开放后台。旧第三方接口及其他未改造的图库/说说配置不在本次范围内。
+
+新增 Pillow 13.0.0，wheel 在本机 `~/.cache/ezio-blog-manager-wheels` 及服务器 `manager-wheels`，已离线安装到专用 venv，pip check 通过。本机测试环境为 `~/.cache/ezio-blog-test-venv`。照片校验/旋转/去元数据/重编码，8 MB、1600万像素、仅静态 JPEG/PNG/WebP。随机地址不可枚举但并非私有，上传面板已说明；旧图和未引用图保留，暂无清理界面。
+
+验证：19项后台测试、67项Node测试、两端构建及runtime检查通过。真实浏览器通过选图、拖拽同名不覆盖、失败保留旧封面、正文插图、草稿保存重开及公开文章404、发布后首页/文章封面/正文图片加载、非可信Origin403及公网写接口不可用。0页面JS错误；截图和结果在 `artifacts/media-upload/`。首轮浏览器选择器误选编辑器占位图片，修正为带src的图片后通过，无产品修复。首次Node测试在仓库根目录运行导致相对路径错误，改为项目规定的XHBlogs目录后67项全过。
+
+复验脚本 `tests/browser-media-upload.cjs` 需要显式 `BLOG_URL=https://47.101.37.232/blog`、已连接的私网隧道、Playwright运行环境，及 `artifacts/media-upload/fixture.png` 测试图片。脚本用标题及SHA256限定清理自己的临时文章/图片；不修改其他内容。无额外人工介入、未调用模型或新增付费服务。撤销应用可使用上一release，保留media目录；内容恢复不要覆盖整目录。使用说明见usage中的封面章节。
