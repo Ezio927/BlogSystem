@@ -43,6 +43,10 @@ jobs:
       - name: Build public reader
         run: npm run build
         working-directory: XHBlogs
+      - name: Verify public reader uses runtime content
+        run: node tests/public-runtime.cjs
       - name: Build local manager
         run: npm run build -- --webpack
         working-directory: my-blog-manager
+      - name: Verify private manager uses runtime content
+        run: node tests/manager-runtime.cjs

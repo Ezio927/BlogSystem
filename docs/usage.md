@@ -1,67 +1,79 @@
-# Ezio's Blog：本地写作与临时预览
+# Ezio's Blog：服务器写作与私网访问
 
-本项目直接采用 XHBlogs 0.4.5 的原版界面。旧 BlogSystem 已归档为工作流验证记录，不是本博客的代码基础。每日选刊展示、管理入口和 Agent 接收已关闭；小鲸鱼使用已有 DeepSeek API 凭据；写作后台不调用公开聊天服务。音乐已关闭；右下角小鲸鱼使用 DeepSeek，只有手动发送才调用。评论暂不启用。
+## 日常写作
 
-## 首次准备与启动
+内容源与后台都运行在上海 ECS。公网只提供阅读：<https://47.101.37.232/blog>。后台和 Python API 分别只监听服务器 `127.0.0.1:3401`、`127.0.0.1:3402`。
 
-需要 Node.js 20.9+、Python 3.10+。当前 WSL 使用已有 Node 24；不修改系统 Node。
+连接已有 Tailscale，在 WSL 中执行：
 
 ```bash
 cd /home/ezio/projects/EzioBlog
-(cd XHBlogs && npm ci)
-bash scripts/local-manager-setup.sh
-bash scripts/prepare-blog.sh
-bash scripts/start-blog.sh
+bash scripts/connect-manager.sh
 ```
 
-博客：<http://127.0.0.1:3400/blog>。另开终端启动后台：
+保持终端打开，在浏览器访问 <http://127.0.0.1:3401/drafts>。现有 `shanghai` SSH 别名指向 Tailscale `100.76.66.55`；SSH 同时转发两个端口，只绑定本机回环地址。断开隧道不停止服务器。若提示本机端口被占用，先核对已有隧道，不要再次启动旧本地后台。
+
+1. 新建或打开文章，编辑标题、摘要、标签和正文。
+2. 「存为草稿」只保存到服务器私有草稿目录；刷新后可以重开。
+3. 在富文本编辑区检查排版；这是现有的所见即所得预览，不是公网样式的独立预览页。
+4. 点击发布或更新公开文章。成功后刷新公网文章即可看到变化，不需要待处理队列、更新本地、同步 XHBlogs 或上传服务器。
+
+文章、杂谈、关于以及说说是动态内容。站点主题/标识、相册、友链、项目等编译期配置目前需代码更新和构建，服务器后台会显示只读说明。音乐、AI 日报、评论仍保持关闭。
+
+## 内容位置与边界
+
+服务器根目录：`~/apps/ezio-blog/`。
+
+| 路径 | 用途 |
+| --- | --- |
+| `content/posts`、`content/chatters`、`content/moments` | 唯一已发布内容源 |
+| `content/app/about/about.md` | 关于页面正文 |
+| `content/manager_data/drafts` | 私有草稿，不在静态资源目录 |
+| `content/manager_data/recovery` | 覆盖/删除前的恢复副本 |
+| `current` → `releases/<版本>` | 公网阅读程序 |
+| `manager-current` → `manager-releases/<版本>` | 私有写作程序 |
+| `manager-venv`、`manager-wheels` | 专用 Python 环境及离线依赖 |
+| `private/chat.env` | 公网小鲸鱼的服务端凭据，不上传 Git |
+
+阅读程序通过 `XHBLOGS_CONTENT_ROOT` 读取 `content`，后台通过 `EZIO_CMS_ROOT` 写入同一个目录。应用发布不复制本机文章到此目录，也不替换其中的草稿。保存保留原子替换、内容版本冲突检查和覆盖前副本；两个旧页面同时编辑时，后保存的旧版本会被拒绝。
+
+后台保留 Host/Origin 检查，SSH 隧道复用现有本机 Origin。没有新增公网管理路由、密码登录页面或 Nginx 后台代理。
+
+## 程序更新
+
+这些是维护命令，日常发表文章不需要执行。
 
 ```bash
-cd /home/ezio/projects/EzioBlog
-python3 scripts/local-manager.py
-```
-
-后台：<http://127.0.0.1:3401>，Python API 仅监听127.0.0.1:3402。启动脚本会在退出时停止自己的两个子进程；端口冲突会明确退出，不会停止其他服务。
-
-## 写作和发布
-
-沿用原版后台队列操作：新建或编辑文章 → 保存草稿 → 在富文本编辑区检查排版 → 点击发布加入待处理队列 → 顶栏待处理操作中「更新本地」 →「同步 XHBlogs」并确认。
-
-- 原版编辑器是所见即所得的富文本界面，可粘贴 Markdown；目前没有独立的“与公开页完全一致”草稿预览按钮。编辑页隐藏悬浮播放器和宠物，避免遮挡保存/发布。
-- 草稿保存在 `my-blog-manager/manager_data/drafts/`，不进入公开博客。
-- 后台的 `posts/`、`chatters/` 是编辑来源，`XHBlogs/` 是同步输出；避免两边分别修改同一篇文章。
-- 同步不会先删除整个目标目录；覆盖前保留恢复副本。过期编辑会报冲突，重新打开最新内容再编辑。
-- 成功同步后刷新本地博客即可读取新文章/更新正文；无需为 Markdown 更新重新构建。站点配置、相册/友链等 TypeScript 数据变更仍需重新执行构建并重启博客。
-- 后台「同步 XHBlogs」不上传服务器。ECS 更新是下一步独立操作，避免把本地保存误认为上线。
-
-## 上海 ECS 临时预览
-
-已追加独立公网 HTTPS 临时入口，具体地址、启动和停止方法见 [公网预览说明](public-preview.md)。下述 Tailscale 地址仍用于私网访问；后台保持本地运行。
-
-使用已有 SSH 别名 `shanghai`。博客单独放在 `~/apps/ezio-blog/`，使用独立 Node 二进制、版本目录和 `ezio-blog-preview` tmux 会话，只绑定服务器 Tailscale IPv4 的3400端口。管理后台、私有草稿、凭据不会上传。新增 Nginx 的 `/blog` 入口，复用现有80/443及证书；不更改其他应用路由、DNS或安全组。
-
-```bash
-cd /home/ezio/projects/EzioBlog
+# 公开阅读程序
 bash scripts/prepare-blog.sh
 bash scripts/publish-preview.sh
+
+# 私有后台程序
+bash scripts/prepare-manager.sh
+bash scripts/publish-manager.sh
 ```
 
-命令最后输出公网和源站地址。公网入口为 https://47.101.37.232/blog，无需 Tailscale；源站私网地址需要 Tailscale 权限。
+构建需要本机 Node 24 和已安装的依赖。公开程序与后台分别保留前一版本路径：`previous-release`、`previous-manager-release`。`publish-preview.sh` 要求持久内容已存在；缺少时拒绝发布，不会用仓库示例文章重新初始化。
 
-当前地址：<http://100.76.66.55:3400/blog>。若代理返回502，让该私网地址绕过代理；命令行可用 `curl --noproxy '*' http://100.76.66.55:3400/blog` 排查。已为上海 ECS 添加精确 DIRECT 规则，并在 WSL 增加代理绕过，备份与恢复见公网说明。预览由 tmux 保持，未配置服务器重启后自动启动；本地后台同样依赖 WSL 持续运行。
+服务器无法从当前在线 pip 源取得包，因此后台使用上传的 wheels 离线安装。若以后确实修改 Python 依赖，先在兼容的 Linux/Python 3.12 环境下载依赖到独立目录，再上传 `manager-wheels`；不要上传 `.venv` 或凭据。当前 requirements 未因迁移升级。
 
-停止临时预览：`ssh shanghai 'tmux kill-session -t ezio-blog-preview'`。恢复上一版时读取服务器 `~/apps/ezio-blog/previous-release`，将 `current` 链接切回对应目录，以 `runtime/node-<对应版本目录名>` 和同一 Tailscale 监听地址重启该会话；版本目录保留，不自动清理。首次部署没有上一版，停止会话即可撤销访问。
+## 运行、停止与恢复
 
-## 许可、个性信息和限制
+服务器 tmux 会话：`ezio-blog-preview`（公开阅读）、`ezio-blog-manager`（私有后台）。后台由专用 Python supervisor 启动生产 Node 和单个 Uvicorn 进程；Ctrl+C 会终止其两个子进程组。
 
-代码沿用 CC BY-NC 4.0，保留作者来源和修改说明；大肥鱼动画另有 CC BY-NC-SA 4.0，字体包含 SIL OFL 许可。参考壁纸和头像仍作为临时预览素材，未对所有第三方素材作独立授权核验；正式公开前应换成自己的素材或确认授权。没有冒用原作者的联系方式或备案号。
+```bash
+# 仅停止后台，不影响阅读；等待3401/3402释放后再启动
+ssh shanghai 'tmux send-keys -t ezio-blog-manager C-c'
+```
 
-站名为「Ezio's Blog」。音乐卡片、播放器、导航、设置查询及API均关闭；旧音乐路径返回404。小鲸鱼的人设、频率限制和服务端配置见 [AI说明](ai-companion.md)。原版的全量 lint 债务单独记录，不代表类型检查或生产构建被跳过。
+重新发布当前程序可恢复服务。若回滚程序，先读取对应 `previous-*` 文件并确认目标存在，再停止该应用、切换相应 current 链接并用该版本 Node 启动。**阅读程序回滚时仍必须设置 `XHBLOGS_CONTENT_ROOT=$HOME/apps/ezio-blog/content`**；程序回滚不回滚文章。后台启动使用其 release 内 `server-manager.py`，同时设置 `EZIO_MANAGER_NODE` 为对应 `runtime/manager-node-<版本>`。
 
-## 项目仓库与旧测试项目
+进程持续独立于本机隧道运行，但目前仍使用 tmux，尚未配置服务器重启后的自动启动。服务器重启后需恢复这两个服务。
 
-正式源码仓库使用 https://github.com/Ezio927/BlogSystem；当前开发目录仍为 `/home/ezio/projects/EzioBlog`。仓库名称沿用旧测试项目，但默认分支文件已整体替换，原Git历史保留。推送代码不会触发服务器部署。
+本机旧数据与服务器迁移前内容已备份，精确位置见交接。`~/.config/ezio-blog/server-authoring` 标记使 `scripts/local-manager.py` 拒绝误启动。`EZIO_ALLOW_LOCAL_MANAGER=1` 仅用于明确的隔离测试或恢复，不应与服务器后台并行写作；标记不是删除本机数据。
 
-旧本地主检出与22个worktree已移到 `/home/ezio/archives/blogsystem-retired-20261113/`，未提交内容完整保留并验证；旧预览进程已停止。不要再从旧路径启动测试博客，恢复方法在归档README。旧Harness项目未修改。
+## 来源与保留限制
 
-本地更新配置或代码时，先停止旧博客Node再构建、重启。`api-run`跨Windows/WSL启动时，关闭tmux可能仍留下Node子进程；用 `ss -ltnp 'sport = :3400'` 核对监听PID及其 `/proc/<PID>/cwd`，只对属于本博客的进程发送SIGTERM，确认端口释放后启动。不要停止其他项目进程。
+博客采用 XHBlogs，旧 BlogSystem 工作流原型已归档。保留原项目 CC BY-NC 4.0、素材各自署名与许可；小鲸鱼形象使用 CC BY-NC-SA 4.0，字体保留许可证。原版背景素材尚未逐项独立核验授权。没有恢复原作者的自动部署、AI 日报或音乐功能。
+
+全库 lint 的历史问题仍见交接，生产构建不跳过类型检查。公网 AI 的人设、限额和凭据说明见 [AI 小鲸鱼](ai-companion.md)；本次迁移没有改变它的模型或额度配置。

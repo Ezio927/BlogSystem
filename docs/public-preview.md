@@ -1,5 +1,7 @@
 # Ezio's Blog 公网访问
 
+> 2026-11-16 更新：公网阅读程序通过 `XHBLOGS_CONTENT_ROOT=~/apps/ezio-blog/content` 读取独立持久内容。后台已迁至 ECS 回环3401/3402，通过现有 Tailscale SSH 转发访问；日常发表无需重新部署。以 [当前使用说明](usage.md) 为准，下面保留入口与代理的历史配置。
+
 当前入口：<https://47.101.37.232/blog>。也可以输入 <http://47.101.37.232/blog>，会跳转 HTTPS。复用服务器现有、可验证的 IP 证书，无需购买域名。`/blog/` 会由 Next.js 规范为 `/blog`。
 
 ## 入口与更新
