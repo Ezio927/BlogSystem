@@ -11,12 +11,12 @@ const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ezio-public-runtime-'));
 const port = 3483;
 let child;
 let logs = '';
-const request = () => new Promise((resolve, reject) => {
-  const req = http.get({ hostname: '127.0.0.1', port, path: '/blog/tree' }, res => {
+const request = (resource = '/blog/tree') => new Promise((resolve, reject) => {
+  const req = http.get({ hostname: '127.0.0.1', port, path: resource }, res => {
     let body = '';
     res.setEncoding('utf8');
     res.on('data', chunk => body += chunk);
-    res.on('end', () => resolve({ status: res.statusCode, body }));
+    res.on('end', () => resolve({ status: res.statusCode, body, headers: res.headers }));
   });
   req.on('error', reject);
 });
@@ -57,6 +57,23 @@ const article = (title, body, draft = false) => `---\ntitle: ${title}\ndate: '20
   assert(updated.body.includes('PublicRuntimePostUpdated'));
   assert(updated.body.includes('Public post version two'));
   assert(!updated.body.includes('Public post version one'));
+  fs.mkdirSync(path.join(root, 'media'));
+  const mediaName = 'a'.repeat(32) + '.png';
+  write('media/' + mediaName, 'runtime image bytes');
+  const image = await request('/blog/media/' + mediaName);
+  assert.equal(image.status, 200);
+  assert.equal(image.body, 'runtime image bytes');
+  assert.equal(image.headers['content-type'], 'image/png');
+  assert.equal(image.headers['x-content-type-options'], 'nosniff');
+  assert(image.headers['cache-control'].includes('immutable'));
+  fs.symlinkSync(path.join(root, 'outside.md'), path.join(root, 'media', 'b'.repeat(32) + '.jpg'));
+  assert.equal((await request('/blog/media/' + 'b'.repeat(32) + '.jpg')).status, 404);
+  assert.equal((await request('/blog/media/outside.md')).status, 404);
+  assert.equal((await request('/blog/media/' + 'c'.repeat(32) + '.png')).status, 404);
+  fs.renameSync(path.join(root, 'media'), path.join(root, 'original-media'));
+  fs.symlinkSync(path.join(root, 'original-media'), path.join(root, 'media'));
+  assert.equal((await request('/blog/media/' + mediaName)).status, 404);
+  console.log('Runtime images: immediate visibility, correct headers, missing files and symlinks passed.');
   console.log('Public standalone /blog/tree: content after startup, live update, private drafts and symlink filtering passed.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   if (child && child.exitCode === null) {

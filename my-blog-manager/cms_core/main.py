@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from cms_core import storage as store
-from cms_core.api import config, picbed, drafts, moments, gallery, friends, projects, sync
+from cms_core.api import config, picbed, drafts, moments, gallery, friends, projects, sync, media
 
 app = FastAPI(title='Ezio Local CMS', version='1.0.0')
 ORIGINS = ['http://127.0.0.1:3401', 'http://localhost:3401']
@@ -20,6 +20,10 @@ async def local_requests_only(request: Request, call_next):
         return JSONResponse({'success': False, 'message': '拒绝跨站请求'}, status_code=403)
     if request.method not in ('GET', 'HEAD', 'OPTIONS') and origin not in ORIGINS:
         return JSONResponse({'success': False, 'message': '写入请求必须来自本地管理端 Origin'}, status_code=403)
+    if request.url.path == '/api/media/upload':
+        length = request.headers.get('content-length', '')
+        if length.isdigit() and int(length) > media.MAX_BYTES + 1024 * 1024:
+            return JSONResponse({'success': False, 'message': 'Image exceeds 8 MB limit'}, status_code=413)
     if store.server_mode():
         path = request.url.path
         if path.startswith('/api/sync/') or path == '/api/drafts/sync_local':
@@ -34,5 +38,5 @@ def status():
     return {'success': True, 'status': 'online', 'message': '服务器后台已连接' if store.server_mode() else '本地写作后台已连接'}
 
 
-for name, module in [('config', config), ('picbed', picbed), ('drafts', drafts), ('moments', moments), ('gallery', gallery), ('friends', friends), ('projects', projects), ('sync', sync)]:
+for name, module in [('config', config), ('picbed', picbed), ('media', media), ('drafts', drafts), ('moments', moments), ('gallery', gallery), ('friends', friends), ('projects', projects), ('sync', sync)]:
     app.include_router(module.router, prefix='/api/' + name)

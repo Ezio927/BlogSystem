@@ -3,15 +3,15 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../ToastProvider';
-import { siteConfig } from '../../siteConfig';
 
 interface FloatingImageToolProps {
   isOpen: boolean;
+  target?: 'cover' | 'editor';
   onClose: () => void;
   onInsert: (url: string) => void;
 }
 
-export default function FloatingImageTool({ isOpen, onClose, onInsert }: FloatingImageToolProps) {
+export default function FloatingImageTool({ isOpen, onClose, onInsert, target = 'editor' }: FloatingImageToolProps) {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'upload' | 'url'>('upload'); // 🌟 新增：切换状态
   const [isUploading, setIsUploading] = useState(false);
@@ -19,36 +19,35 @@ export default function FloatingImageTool({ isOpen, onClose, onInsert }: Floatin
   const [externalUrl, setExternalUrl] = useState(''); // 🌟 新增：外链输入状态
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadInFlight = useRef(false);
 
   // 处理文件上传逻辑 (保持不变)
   const handleFileUpload = async (file: File) => {
-    const picUrl = (siteConfig as any).picBedUrl || "https://pic.dusays.com";
-    const picToken = (siteConfig as any).picBedToken;
-
-    if (!picToken) {
-      showToast("未配置图床 Token！", "error");
+    if (uploadInFlight.current) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 8 * 1024 * 1024) {
+      showToast('请选择不超过 8 MB 的 JPEG、PNG 或 WebP 图片', 'error');
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
-
+    uploadInFlight.current = true;
     setIsUploading(true);
-    showToast("正在将图片传送至云端...", "success");
+    showToast("正在上传到博客服务器…", "success");
 
     try {
       const configRes = await fetch(`/backend_config.json?t=${Date.now()}`);
       const configData = await configRes.json();
       const uploadData = new FormData();
       uploadData.append('file', file);
-      uploadData.append('url', picUrl);
-      uploadData.append('token', picToken);
 
-      const res = await fetch(`http://127.0.0.1:${configData.api_port}/api/picbed/upload`, {
+      const res = await fetch(`http://127.0.0.1:${configData.api_port}/api/media/upload`, {
         method: 'POST',
         body: uploadData,
       });
 
       const data = await res.json();
       if (data.success && data.url) {
-        setUploadedUrl(data.url);
+        if (target === 'cover') { onInsert(data.url); onClose(); }
+        else { setUploadedUrl(data.url); }
         showToast("✅ 上传成功！", "success");
       } else {
         showToast(`上传失败: ${data.message || '未知错误'}`, "error");
@@ -56,6 +55,7 @@ export default function FloatingImageTool({ isOpen, onClose, onInsert }: Floatin
     } catch (error: any) {
       showToast(`连接异常: ${error.message}`, "error");
     } finally {
+      uploadInFlight.current = false;
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
@@ -103,9 +103,9 @@ export default function FloatingImageTool({ isOpen, onClose, onInsert }: Floatin
           {/* 标题栏 */}
           <div className="flex justify-between items-center p-5 border-b border-white/30 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50">
             <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              <span className="text-emerald-500 text-lg">☁️</span> 图床工作台
+              <span className="text-emerald-500 text-lg">☁️</span> 图片上传
             </h3>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/50 dark:bg-slate-700/50 flex items-center justify-center text-slate-500 hover:bg-red-500 hover:text-white transition-all cursor-pointer shadow-sm">✕</button>
+            <button disabled={isUploading} onClick={onClose} className="w-8 h-8 rounded-full bg-white/50 dark:bg-slate-700/50 flex items-center justify-center text-slate-500 hover:bg-red-500 hover:text-white transition-all cursor-pointer shadow-sm">✕</button>
           </div>
 
           <div className="p-6 cursor-default bg-white/20 dark:bg-slate-900/20">
@@ -116,10 +116,10 @@ export default function FloatingImageTool({ isOpen, onClose, onInsert }: Floatin
                   onClick={() => setActiveTab('upload')}
                   className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${activeTab === 'upload' ? 'bg-white dark:bg-slate-700 text-emerald-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                 >
-                  云端上传
+                  上传图片
                 </button>
                 <button
-                  onClick={() => setActiveTab('url')}
+                  disabled={isUploading} onClick={() => setActiveTab('url')}
                   className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${activeTab === 'url' ? 'bg-white dark:bg-slate-700 text-emerald-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                 >
                   外链插入
@@ -127,6 +127,7 @@ export default function FloatingImageTool({ isOpen, onClose, onInsert }: Floatin
               </div>
             )}
 
+            <p className="mb-4 text-xs leading-5 text-slate-600 dark:text-slate-300">JPEG / PNG / WebP，最大 8 MB、1600 万像素，仅静态图片。上传后拥有链接即可查看，请勿上传私密图片。保存或发布文章后封面设置才会保留。</p>
             {!uploadedUrl ? (
               activeTab === 'upload' ? (
                 // 模式 A：上传拖拽区
@@ -137,10 +138,10 @@ export default function FloatingImageTool({ isOpen, onClose, onInsert }: Floatin
                   onClick={() => fileInputRef.current?.click()}
                   className={`w-full h-36 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all shadow-inner ${isDragging ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-900/40' : 'border-slate-300/80 dark:border-slate-600/80 hover:bg-white/60 dark:hover:bg-slate-800/60'}`}
                 >
-                  <input type="file" ref={fileInputRef} onChange={e => e.target.files && handleFileUpload(e.target.files[0])} accept="image/*" className="hidden" />
+                  <input type="file" ref={fileInputRef} onChange={e => e.target.files && handleFileUpload(e.target.files[0])} disabled={isUploading} accept="image/jpeg,image/png,image/webp" className="hidden" />
                   <div className="text-4xl drop-shadow-sm">{isUploading ? '⏳' : '📥'}</div>
                   <div className="text-center">
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{isUploading ? '正在极速上传...' : '点击或拖拽图片'}</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{isUploading ? '正在上传…' : '点击或拖拽图片'}</p>
                   </div>
                 </div>
               ) : (
@@ -177,7 +178,7 @@ export default function FloatingImageTool({ isOpen, onClose, onInsert }: Floatin
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <button onClick={copyUrlToClipboard} className="py-2.5 rounded-xl bg-white/60 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-white dark:hover:bg-slate-700 transition-all shadow-sm">🔗 复制链接</button>
-                  <button onClick={() => { onInsert(uploadedUrl); setUploadedUrl(''); setExternalUrl(''); }} className="py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-500/30 hover:from-emerald-600 hover:to-teal-600 transition-all active:scale-95">✨ 嵌入正文</button>
+                  <button onClick={() => { onInsert(uploadedUrl); setUploadedUrl(''); setExternalUrl(''); }} className="py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-500/30 hover:from-emerald-600 hover:to-teal-600 transition-all active:scale-95">{target === 'cover' ? '设为封面' : '嵌入正文'}</button>
                 </div>
               </div>
             )}

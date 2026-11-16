@@ -78,6 +78,10 @@ const article = (title, body) => `---\ntitle: ${title}\ndate: '2026-11-16'\ntags
   assert.equal(settings.status, 200);
   assert(settings.body.includes('修改后需要重新构建部署'));
   assert(!settings.body.includes('title="待处理操作"'), 'Server mode must hide the local queue');
+  const mediaName = 'd'.repeat(32) + '.webp';
+  write('media/' + mediaName, 'manager image fixture');
+  assert.equal((await request('/media/' + mediaName)).body, 'manager image fixture');
+  assert.equal((await request('/media/private.json')).status, 404);
   console.log('Manager standalone: 10 persistent-content routes, new slugs, live update, 404s, private drafts and server settings passed.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   if (child && child.exitCode === null) {
