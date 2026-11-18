@@ -12,8 +12,6 @@ import { Float, Html } from '@react-three/drei';
 import LabComments from '../../components/LabComments';
 import { siteConfig } from '../../siteConfig';
 
-import { albums } from '../../data/albums';
-import { friendsData } from '../../data/friends';
 
 function seededRandom(seed: number) {
   const x = Math.sin(seed) * 10000;
@@ -324,7 +322,7 @@ const HologramShip = ({ activeCategory, currentRecords, router }: any) => {
 // ==========================================
 // 🌟 6. 核心页面渲染
 // ==========================================
-export default function DijiangModel({ posts = [], chatters = [], moments = [] }: any) {
+export default function DijiangModel({ posts = [], chatters = [], moments = [], totalPhotos, totalFriends }: any) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [sysTip, setSysTip] = useState<string | null>(null);
@@ -338,8 +336,6 @@ export default function DijiangModel({ posts = [], chatters = [], moments = [] }
   const rpgStats = useMemo(() => {
     if (siteConfig?.enableLevelSystem !== true) return null;
 
-    const totalPhotos = (albums || []).reduce((acc: number, curr: any) => acc + (curr.photos?.length || 0), 0);
-    const totalFriends = (friendsData || []).length;
 
     const parseDateStr = (dateVal: any) => {
       try {
@@ -474,14 +470,14 @@ export default function DijiangModel({ posts = [], chatters = [], moments = [] }
       todayPosts: tp, todayChatters: tc, todayMoments: tm,
       ownedBadges, allCatalogBadges, ownedIds
     };
-  }, [posts, chatters, moments]);
+  }, [posts, chatters, moments, totalPhotos, totalFriends]);
 
   const availableMonths = useMemo(() => {
     const allItems = [...posts, ...chatters, ...moments];
     const monthsSet = new Set(allItems.map(item => item.date?.substring(0, 7)).filter(Boolean));
     const sorted = Array.from(monthsSet).sort();
     return sorted.length > 0 ? sorted : [new Date().toISOString().substring(0, 7)];
-  }, [posts, chatters, moments]);
+  }, [posts, chatters, moments, totalPhotos, totalFriends]);
 
   const [monthIndex, setMonthIndex] = useState(availableMonths.length - 1);
   const currentMonthStr = mounted ? (availableMonths[monthIndex] || new Date().toISOString().substring(0, 7)) : '2026-05';

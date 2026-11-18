@@ -81,7 +81,7 @@ export default function TimelineClient({ posts: initialPosts, tags }: { posts: a
     <div className="w-full max-w-5xl mx-auto mt-28 px-4 sm:px-10 relative z-10">
 
       <div className="text-center mb-12 relative z-20">
-        <h1 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter mb-4">归档与探索</h1>
+        <h1 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter mb-4">文章</h1>
         <p className="text-slate-500 dark:text-slate-400 font-medium flex items-center justify-center gap-2 italic">
           <Sparkles size={16} className="text-indigo-500" /> 总计 {posts.length} 篇研究记录
         </p>
@@ -148,7 +148,7 @@ export default function TimelineClient({ posts: initialPosts, tags }: { posts: a
         <div className="w-full flex flex-col md:flex-row justify-between items-center gap-6 bg-white/30 dark:bg-slate-800/30 backdrop-blur-md p-4 rounded-3xl border border-white/20 dark:border-white/5">
           <div className="flex flex-wrap justify-center md:justify-start gap-2 flex-1">
             <button onClick={() => setSelectedTag('All')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${selectedTag === 'All' ? 'bg-indigo-500 text-white shadow-md' : 'bg-white/50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 hover:bg-white'}`}>
-              全部档案
+              全部文章
             </button>
             {tags.map(tag => (
               <button key={tag.name} onClick={() => setSelectedTag(tag.name)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${selectedTag === tag.name ? 'bg-indigo-500 text-white shadow-md' : 'bg-white/50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 hover:bg-white'}`}>

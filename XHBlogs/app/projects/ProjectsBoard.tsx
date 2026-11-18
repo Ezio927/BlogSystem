@@ -3,9 +3,9 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BackButton from '../../components/BackButton'; // 注意层级路径
-import { projectsData } from '../../data/projects';
+import type { Project } from '../../data/projects';
 
-export default function ProjectsBoard() {
+export default function ProjectsBoard({ items: projectsData }: { items: Project[] }) {
   const [searchQuery, setSearchQuery] = useState("");
 
   // 搜索过滤逻辑
@@ -18,7 +18,7 @@ export default function ProjectsBoard() {
       project.description.toLowerCase().includes(query) ||
       project.tags.some(tag => tag.toLowerCase().includes(query))
     );
-  }, [searchQuery]);
+  }, [searchQuery, projectsData]);
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-10 py-10 relative z-10">
@@ -78,7 +78,7 @@ export default function ProjectsBoard() {
 
                 <div className="flex items-start justify-between mb-4 relative z-10">
                   <div className="flex items-center gap-4">
-                    <span className="text-4xl">{project.icon}</span>
+                    <span className="text-4xl">{/^https?:\/\//i.test(project.icon) ? <img src={project.icon} alt="" className="w-14 h-14 rounded-xl object-cover" /> : project.icon}</span>
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                       {project.name}
                     </h2>

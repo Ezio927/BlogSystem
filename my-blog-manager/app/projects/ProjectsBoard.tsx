@@ -3,18 +3,21 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BackButton from '../../components/BackButton';
-import { projectsData as initialProjects, Project } from '../../data/projects';
+import type { Project } from '../../data/projects';
 import { Plus, Pencil, Trash2, AlertTriangle, Save, Edit3, X, Sparkles, Code2 } from 'lucide-react';
-import ServerSettingsNotice from '../../components/ServerSettingsNotice';
+import { useCollectionSave } from '../../lib/useCollectionSave';
 import { useOperations } from '../../context/OperationContext';
 import { useToast } from '../../components/ToastProvider';
 
-export default function ProjectsBoard() {
+import FloatingImageTool from '../../components/editor/FloatingImageTool';
+
+export default function ProjectsBoard({ items, revision }: { items: Project[]; revision: string | null }) {
   const { addOperation, serverMode } = useOperations();
   const { showToast } = useToast();
 
   // 1. 核心状态
-  const [editableProjects, setEditableProjects] = useState<Project[]>(initialProjects);
+  const [editableProjects, setEditableProjects] = useState<Project[]>(items);
+  const [pickIcon, setPickIcon] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // 2. 弹窗状态
@@ -33,7 +36,9 @@ export default function ProjectsBoard() {
   }, [searchQuery, editableProjects]);
 
   // --- 核心逻辑：加入暂存队列 ---
-  const syncToQueue = (nextList: Project[]) => {
+  const publish = useCollectionSave('projects', revision);
+  const saveChanges = async (nextList: Project[]) => {
+    if (serverMode) return publish(nextList);
     addOperation({
       id: `sync_projects_${Date.now()}`,
       type: "sync_projects",
@@ -41,9 +46,10 @@ export default function ProjectsBoard() {
       value: nextList
     });
     showToast("📍 变更已加入待处理队列，请在 Navbar 点击更新本地", "info");
+    return true;
   };
 
-  const handleSaveProject = () => {
+  const handleSaveProject = async () => {
     const { mode, data } = projectModal;
     if (!data.name || !data.githubUrl) {
       showToast("名称和 GitHub 地址是必填项", "warning");
@@ -64,16 +70,16 @@ export default function ProjectsBoard() {
     } else {
       next = editableProjects.map(p => p.id === data.id ? { ...p, ...data } as Project : p);
     }
+    if (!await saveChanges(next)) return;
     setEditableProjects(next);
-    syncToQueue(next);
     setProjectModal({ isOpen: false, mode: 'add', data: {} });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteModal.id) return;
     const next = editableProjects.filter(p => p.id !== deleteModal.id);
+    if (!await saveChanges(next)) return;
     setEditableProjects(next);
-    syncToQueue(next);
     setDeleteModal({ isOpen: false, id: null, name: null });
   };
 
@@ -84,11 +90,12 @@ export default function ProjectsBoard() {
     </svg>
   );
 
-  if (serverMode) return <div className="mx-auto mt-28 max-w-4xl p-6"><ServerSettingsNotice /></div>;
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-10 py-10 relative z-10">
 
+      {pickIcon && <FloatingImageTool target="cover" isOpen onClose={() => setPickIcon(false)}
+        onInsert={icon => { setProjectModal(prev => ({ ...prev, data: { ...prev.data, icon } })); setPickIcon(false); }} />}
       {/* 💎 销毁确认弹窗 */}
       <AnimatePresence>
         {deleteModal.isOpen && (
@@ -117,6 +124,7 @@ export default function ProjectsBoard() {
                <div className="space-y-4">
                  <div className="flex gap-4">
                     <input type="text" value={projectModal.data.icon || ''} onChange={e => setProjectModal({...projectModal, data: {...projectModal.data, icon: e.target.value}})} className="w-20 bg-slate-100 dark:bg-black/20 rounded-2xl px-5 py-3 text-center text-2xl border-none outline-none focus:ring-2 focus:ring-indigo-500" placeholder="图标" />
+                    <button type="button" onClick={() => setPickIcon(true)} className="text-sm text-indigo-600">上传图标</button>
                     <input type="text" value={projectModal.data.name || ''} onChange={e => setProjectModal({...projectModal, data: {...projectModal.data, name: e.target.value}})} className="flex-1 bg-slate-100 dark:bg-black/20 rounded-2xl px-5 py-3 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 border-none" placeholder="项目名称" />
                  </div>
                  <input type="text" value={projectModal.data.githubUrl || ''} onChange={e => setProjectModal({...projectModal, data: {...projectModal.data, githubUrl: e.target.value}})} className="w-full bg-slate-100 dark:bg-black/20 rounded-2xl px-5 py-3 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 border-none" placeholder="GitHub URL" />
@@ -125,7 +133,7 @@ export default function ProjectsBoard() {
                </div>
                <div className="mt-8 flex gap-3">
                  <button onClick={() => setProjectModal({ ...projectModal, isOpen: false })} className="flex-1 py-3 text-slate-500 font-bold uppercase text-xs">取消</button>
-                 <button onClick={handleSaveProject} className="flex-1 py-4 bg-indigo-500 text-white rounded-2xl font-black shadow-lg flex items-center justify-center gap-2"><Save size={18} /> 加入暂存</button>
+                 <button onClick={handleSaveProject} className="flex-1 py-4 bg-indigo-500 text-white rounded-2xl font-black shadow-lg flex items-center justify-center gap-2"><Save size={18} /> {serverMode ? "保存并公开" : "加入暂存"}</button>
                </div>
             </motion.div>
           </div>
@@ -158,7 +166,7 @@ export default function ProjectsBoard() {
             <div className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-indigo-500 group-hover:text-white transition-all shadow-md group-hover:rotate-90">
               <Plus size={40} />
             </div>
-            <span className="mt-4 text-xs font-black uppercase tracking-[0.3em] text-slate-400 group-hover:text-indigo-500">INIT NEW PROJECT</span>
+            <span className="mt-4 text-xs font-black uppercase tracking-[0.3em] text-slate-400 group-hover:text-indigo-500">添加项目</span>
         </motion.div>
 
         <AnimatePresence mode='popLayout'>
@@ -176,7 +184,7 @@ export default function ProjectsBoard() {
 
                 <div className="flex items-start justify-between mb-8 relative z-10">
                   <div className="flex items-center gap-5">
-                    <span className="text-5xl group-hover:scale-110 transition-transform duration-500">{project.icon}</span>
+                    <span className="text-5xl group-hover:scale-110 transition-transform duration-500">{/^https?:\/\//i.test(project.icon) ? <img src={project.icon} alt="" className="w-14 h-14 rounded-xl object-cover" /> : project.icon}</span>
                     <h2 className="text-3xl font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{project.name}</h2>
                   </div>
                   <GithubIcon />
