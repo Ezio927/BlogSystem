@@ -23,11 +23,11 @@ export default function CyberCat() {
     }, duration);
   };
 
-  // --- 🖱️ 交互事件：摸猫猫 ---
-  const handlePetCat = () => {
+  // --- 🖱️ 交互事件：摸摸小鲸鱼 ---
+  const handlePetWhale = () => {
     if (isPetted) return;
     setIsPetted(true);
-    speak("呼噜噜... 摸得本喵很舒服喵~", 2000);
+    speak("嘿嘿……才、才没有很开心啦～", 2000);
     setTimeout(() => {
       setIsPetted(false);
     }, 2000);
@@ -35,12 +35,12 @@ export default function CyberCat() {
 
   // --- 🐟 交互事件：喂小鱼干 ---
   const handleFeed = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // 阻止触发摸猫或拖拽
+    e.stopPropagation(); // 阻止触发触摸或拖拽
     if (isThinking) return;
 
     setShowInput(false); // 喂食时关掉输入框
     setIsThinking(true);
-    speak("嗷呜！真好吃喵！本喵吃饱了要说两句...", 6000);
+    speak("啊呜，小鱼收到了！", 6000);
 
     try {
       const res = await fetch('/api/chat', {
@@ -54,7 +54,7 @@ export default function CyberCat() {
       const data = await res.json();
       speak(data.reply, 8000);
     } catch (error) {
-      speak("吧唧吧唧... 鱼干好吃，但本喵卡壳了喵...", 4000);
+      speak("小鲸鱼刚才没接上话，再试一次吧。", 4000);
     } finally {
       setIsThinking(false);
     }
@@ -69,7 +69,7 @@ export default function CyberCat() {
     setInputValue('');
     setShowInput(false);
     setIsThinking(true);
-    speak("让本喵想想喵...", 10000);
+    speak("让小鲸鱼想一想……", 10000);
 
     try {
       const res = await fetch('/api/chat', {
@@ -83,7 +83,7 @@ export default function CyberCat() {
       const data = await res.json();
       speak(data.reply, 8000);
     } catch (error) {
-      speak("铲屎官的网线被老鼠咬断了吧？喵！", 4000);
+      speak("这次没连上，过一会儿再来吧。", 4000);
     } finally {
       setIsThinking(false);
     }
@@ -92,11 +92,11 @@ export default function CyberCat() {
   // --- ⏳ 随机挂机语录 ---
   useEffect(() => {
     const randomBarks = [
-      "喵呜~ 今天天气真不错喵~",
-      "好困哦，想睡觉喵...",
-      "铲屎官，快去敲代码！",
+      "今天有什么想记下来的事呀？",
+      "尾巴一晃，我又游回来啦。",
+      "慢慢写，我在旁边陪你。",
       "我的小鱼干藏哪里去了？",
-      "怎么没人理本喵...",
+      "要跟小鲸鱼打个招呼吗？",
     ];
     const randomTalkInterval = setInterval(() => {
       if (!speech && !showInput && !isThinking && Math.random() > 0.8) {
@@ -137,7 +137,7 @@ export default function CyberCat() {
         </AnimatePresence>
       </div>
 
-      {/* 🐈 猫咪本体 & 交互按钮区 */}
+      {/* 小鲸鱼 & 交互按钮区 */}
       <div className="relative">
 
         {/* 🌟 核心修改区：去掉了 opacity-0 和 group-hover，让按钮常驻显示 */}
@@ -169,44 +169,13 @@ export default function CyberCat() {
             </button>
         </div>
 
-        {/* 猫咪图片容器 */}
-        <div
-          className="w-[120px] h-[120px] relative cursor-pointer"
-          onClick={handlePetCat}
-        >
-          <style>{`
-            .cat-sprite {
-              width: 100%;
-              height: 100%;
-              background-image: url('/siamese-cat.png'); 
-              background-size: 300% 300%; 
-              background-repeat: no-repeat;
-              image-rendering: pixelated; 
-            }
-            .cat-idle {
-              animation: idle-frames 1.2s infinite;
-              background-position-y: 0%; 
-            }
-            .cat-petted {
-              animation: pet-frames 0.8s infinite;
-              background-position-y: 50%; 
-            }
-            .cat-thinking {
-              animation: idle-frames 0.6s infinite;
-              background-position-y: 0%; 
-            }
-            @keyframes idle-frames {
-              0%, 33.32% { background-position-x: 0%; }
-              33.33%, 66.65% { background-position-x: 50%; }
-              66.66%, 100% { background-position-x: 100%; }
-            }
-            @keyframes pet-frames {
-              0%, 49.99% { background-position-x: 0%; }
-              50%, 100% { background-position-x: 50%; }
-            }
-          `}</style>
-          <div className={`cat-sprite drop-shadow-2xl ${isPetted ? 'cat-petted' : isThinking ? 'cat-thinking' : 'cat-idle'}`} />
-        </div>
+        <button type="button" onClick={handlePetWhale} aria-label="摸摸小鲸鱼"
+          className="w-[120px] h-[120px] cursor-pointer">
+          <img src={`/pets/little-whale/${isThinking ? 'worry' : isPetted ? 'blink' : 'idle'}.png`}
+            alt="小鲸鱼" draggable={false} className="h-full w-full object-contain drop-shadow-xl" />
+        </button>
+        <a href="/pets/little-whale/NOTICE-PC2005.txt" target="_blank" rel="noreferrer"
+          className="block text-center text-xs text-slate-600 dark:text-slate-300">角色素材署名</a>
       </div>
 
       {/* ⌨️ 互动输入框 */}
@@ -223,7 +192,7 @@ export default function CyberCat() {
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="跟煤球说点啥喵..."
+              placeholder="跟小鲸鱼说句话…"
               className="bg-transparent border-none outline-none text-sm px-3 py-1 w-full dark:text-white placeholder-gray-400"
               disabled={isThinking}
               autoFocus
