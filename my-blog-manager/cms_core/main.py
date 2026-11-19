@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from cms_core import storage as store
-from cms_core.api import config, picbed, drafts, moments, gallery, friends, projects, sync, media
+from cms_core.api import config, picbed, drafts, moments, gallery, friends, projects, sync, media, collections
 
 app = FastAPI(title='Ezio Local CMS', version='1.0.0')
 ORIGINS = ['http://127.0.0.1:3401', 'http://localhost:3401']
@@ -38,5 +38,5 @@ def status():
     return {'success': True, 'status': 'online', 'message': '服务器后台已连接' if store.server_mode() else '本地写作后台已连接'}
 
 
-for name, module in [('config', config), ('picbed', picbed), ('media', media), ('drafts', drafts), ('moments', moments), ('gallery', gallery), ('friends', friends), ('projects', projects), ('sync', sync)]:
+for name, module in [('config', config), ('picbed', picbed), ('media', media), ('collections', collections), ('drafts', drafts), ('moments', moments), ('gallery', gallery), ('friends', friends), ('projects', projects), ('sync', sync)]:
     app.include_router(module.router, prefix='/api/' + name)

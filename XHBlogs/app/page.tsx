@@ -13,7 +13,7 @@ import { siteConfig } from '../siteConfig';
 import ThemeToggleBlock from '../components/ThemeToggleBlock';
 import ProfileCard from '../components/ProfileCard';
 import SiteDashboard from '../components/SiteDashboard';
-import { albums } from '../data/albums';
+import { readCollection } from '../lib/collections';
 import { ToastProvider } from '../components/ToastProvider';
 
 import LatestPostsCarousel from '../components/LatestPostsCarousel';
@@ -37,6 +37,7 @@ function formatUpdateTime(dateString: string) {
 }
 
 export default function Home() {
+  const { items: albums } = readCollection('albums');
   const postsDirectory = path.join((process.env.XHBLOGS_CONTENT_ROOT || process.cwd()), 'posts');
   let allPosts: any[] = [];
   try {
@@ -89,7 +90,7 @@ export default function Home() {
 
   const chatterCount = allChatters.length;
   const realPhotoCount = albums.reduce((total, album) => total + album.photos.length, 0);
-  const latestAlbum = albums.length > 0 ? albums[0] : { id: '', title: '照片墙', description: '生活碎片', cover: siteConfig.photoWallImage, date: '' };
+  const latestAlbum = albums.length > 0 ? albums[0] : { id: '', title: '生活碎片', description: '', cover: siteConfig.photoWallImage, date: '' };
 
   return (
     <ToastProvider>

@@ -5,9 +5,9 @@ import { withBasePath } from '../../lib/sitePath.mjs';
 import { useState, useMemo, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
 import PageTransition from '../../components/PageTransition';
-import { albums, Album } from '../../data/albums';
+import type { Album } from '../../data/albums';
 
-export default function PhotoWallClient() {
+export default function PhotoWallClient({ items: albums }: { items: Album[] }) {
   const [currentAlbum, setCurrentAlbum] = useState<Album | null>(null);
   const [selectedImage, setSelectedImage] = useState<{url: string, caption?: string} | null>(null);
 
@@ -39,7 +39,7 @@ export default function PhotoWallClient() {
     ).filter(photo => photo.caption?.toLowerCase().includes(activeQuery));
 
     return { matchedAlbums, matchedPhotos };
-  }, [activeQuery]);
+  }, [activeQuery, albums]);
 
   return (
     <div className="min-h-screen relative pb-32">
@@ -52,7 +52,7 @@ export default function PhotoWallClient() {
             <div className="animate-fade-in-up">
               <div className="flex flex-col md:flex-row justify-between items-center mb-16 gap-6">
                 <div>
-                  <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-widest mb-2 transition-colors duration-700">光影画廊</h1>
+                  <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-widest mb-2 transition-colors duration-700">生活碎片</h1>
                   <p className="text-slate-600 dark:text-slate-400 font-medium tracking-wider transition-colors duration-700">定格时间，封存泰拉与现实的每一次心跳</p>
                 </div>
 

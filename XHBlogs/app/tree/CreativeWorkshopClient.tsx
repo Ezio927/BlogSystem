@@ -11,7 +11,7 @@ import AlchemyLab from './AlchemyLab';
 import DijiangModel from './DijiangModel';
 // import OperatorRecreation from './OperatorRecreation'; // 🌟 先注释掉，以后需要随时可以加回来
 
-export default function CreativeWorkshopClient({ posts = [], chatters = [], moments = [] }: any) {
+export default function CreativeWorkshopClient({ posts = [], chatters = [], moments = [], totalPhotos, totalFriends }: any) {
   const [currentMode, setCurrentMode] = useState<'alchemy' | 'model'>('alchemy'); // 🌟 暂时只保留两个状态
 
   // =========================================================
@@ -82,7 +82,7 @@ export default function CreativeWorkshopClient({ posts = [], chatters = [], mome
     } catch (error) {
       console.error("经验系统计算流走火入魔：", error);
     }
-  }, [posts, chatters, moments]);
+  }, [posts, chatters, moments, totalPhotos, totalFriends]);
   // =========================================================
 
   return (
@@ -134,10 +134,10 @@ export default function CreativeWorkshopClient({ posts = [], chatters = [], mome
           {/* 动态渲染子组件 */}
           <AnimatePresence mode="wait">
             {currentMode === 'alchemy' && (
-              <AlchemyLab key="alchemy-view" posts={posts} chatters={chatters} moments={moments} />
+              <AlchemyLab key="alchemy-view" posts={posts} chatters={chatters} moments={moments} totalPhotos={totalPhotos} totalFriends={totalFriends} />
             )}
             {currentMode === 'model' && (
-              <DijiangModel key="model-view" posts={posts} chatters={chatters} moments={moments} />
+              <DijiangModel key="model-view" posts={posts} chatters={chatters} moments={moments} totalPhotos={totalPhotos} totalFriends={totalFriends} />
             )}
             {/* 🌟 第三种展示暂时隐藏 */}
           </AnimatePresence>

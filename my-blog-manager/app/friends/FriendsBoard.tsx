@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BackButton from '../../components/BackButton';
-import { friendsData as initialFriends, Friend } from '../../data/friends';
+import type { Friend } from '../../data/friends';
 import { Plus, Pencil, Trash2, AlertTriangle, Save, Edit3, X, CloudUpload, Sparkles } from 'lucide-react';
-import ServerSettingsNotice from '../../components/ServerSettingsNotice';
+import { useCollectionSave } from '../../lib/useCollectionSave';
 import { useOperations } from '../../context/OperationContext';
 import { useToast } from '../../components/ToastProvider';
 import FloatingImageTool from '../../components/editor/FloatingImageTool';
@@ -24,11 +24,11 @@ const itemVariants = {
   show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
 };
 
-export default function FriendsBoard() {
+export default function FriendsBoard({ items, revision }: { items: Friend[]; revision: string | null }) {
   const { addOperation, serverMode } = useOperations();
   const { showToast } = useToast();
 
-  const [editableFriends, setEditableFriends] = useState<Friend[]>(initialFriends);
+  const [editableFriends, setEditableFriends] = useState<Friend[]>(items);
 
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string | null; name: string | null }>({ isOpen: false, id: null, name: null });
   const [friendModal, setFriendModal] = useState<{ isOpen: boolean; mode: 'add' | 'edit'; data: Partial<Friend> }>({ isOpen: false, mode: 'add', data: {} });
@@ -44,7 +44,9 @@ export default function FriendsBoard() {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  const syncToQueue = (nextList: Friend[]) => {
+  const publish = useCollectionSave('friends', revision);
+  const saveChanges = async (nextList: Friend[]) => {
+    if (serverMode) return publish(nextList);
     addOperation({
       id: `sync_friends_${Date.now()}`,
       type: "sync_friends",
@@ -52,9 +54,10 @@ export default function FriendsBoard() {
       value: nextList
     });
     showToast("📍 变更已加入待处理队列，请在 Navbar 点击更新本地", "info");
+    return true;
   };
 
-  const handleSaveFriend = () => {
+  const handleSaveFriend = async () => {
     const { mode, data } = friendModal;
     if (!data.name || !data.url) { showToast("名称和 URL 不能为空哦", "warning"); return; }
 
@@ -72,24 +75,23 @@ export default function FriendsBoard() {
     } else {
       next = editableFriends.map(f => f.id === data.id ? { ...f, ...data } as Friend : f);
     }
+    if (!await saveChanges(next)) return;
     setEditableFriends(next);
-    syncToQueue(next);
     setFriendModal({ isOpen: false, mode: 'add', data: {} });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     const next = editableFriends.filter(f => f.id !== deleteModal.id);
+    if (!await saveChanges(next)) return;
     setEditableFriends(next);
-    syncToQueue(next);
     setDeleteModal({ isOpen: false, id: null, name: null });
   };
 
-  if (serverMode) return <div className="mx-auto mt-28 max-w-4xl p-6"><ServerSettingsNotice /></div>;
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-10 py-10 relative z-10">
 
-      <FloatingImageTool
+      <FloatingImageTool target="cover"
         key={isImgToolOpen ? 'tool-open' : 'tool-closed'}
         isOpen={isImgToolOpen}
         onClose={() => setIsImgToolOpen(false)}
@@ -140,7 +142,7 @@ export default function FriendsBoard() {
                </div>
                <div className="mt-8 flex gap-3">
                  <button onClick={() => setFriendModal({ ...friendModal, isOpen: false })} className="flex-1 py-3 text-slate-500 font-bold hover:text-slate-800 dark:hover:text-white transition-colors">取消</button>
-                 <button onClick={handleSaveFriend} className="flex-1 py-4 bg-indigo-500 text-white rounded-2xl font-black shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 hover:bg-indigo-600 transition-colors"><Save size={18} /> 加入暂存</button>
+                 <button onClick={handleSaveFriend} className="flex-1 py-4 bg-indigo-500 text-white rounded-2xl font-black shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 hover:bg-indigo-600 transition-colors"><Save size={18} /> {serverMode ? "保存并公开" : "加入暂存"}</button>
                </div>
             </motion.div>
           </div>

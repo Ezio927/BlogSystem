@@ -11,8 +11,6 @@ import LabComments from '../../components/LabComments';
 import { siteConfig } from '../../siteConfig';
 
 // 🌟 引入相册与友链数据以统计徽章 (请确保路径正确，如果报错请调整 ../ 的数量)
-import { albums } from '../../data/albums';
-import { friendsData } from '../../data/friends';
 
 function seededRandom(seed: number) {
   const x = Math.sin(seed) * 10000;
@@ -179,7 +177,7 @@ const StickyNote = ({ note }: { note: any }) => {
 // ==========================================
 // 🌟 4. 核心实验室组件 (完全体)
 // ==========================================
-export default function AlchemyLab({ posts = [], chatters = [], moments = [] }: any) {
+export default function AlchemyLab({ posts = [], chatters = [], moments = [], totalPhotos, totalFriends }: any) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -195,8 +193,6 @@ export default function AlchemyLab({ posts = [], chatters = [], moments = [] }: 
     if (siteConfig?.enableLevelSystem !== true) return null;
 
     // 统计照片与友链 (纯发徽章，不加经验)
-    const totalPhotos = (albums || []).reduce((acc: number, curr: any) => acc + (curr.photos?.length || 0), 0);
-    const totalFriends = (friendsData || []).length;
 
     const parseDateStr = (dateVal: any) => {
       try {
@@ -339,14 +335,14 @@ export default function AlchemyLab({ posts = [], chatters = [], moments = [] }: 
       todayPosts: tp, todayChatters: tc, todayMoments: tm,
       ownedBadges, allCatalogBadges, ownedIds, totalPhotos, totalFriends
     };
-  }, [posts, chatters, moments]);
+  }, [posts, chatters, moments, totalPhotos, totalFriends]);
 
   const availableMonths = useMemo(() => {
     const allItems = [...posts, ...chatters, ...moments];
     const monthsSet = new Set(allItems.map(item => item.date?.substring(0, 7)).filter(Boolean));
     const sorted = Array.from(monthsSet).sort();
     return sorted.length > 0 ? sorted : [new Date().toISOString().substring(0, 7)];
-  }, [posts, chatters, moments]);
+  }, [posts, chatters, moments, totalPhotos, totalFriends]);
 
   const [currentMonthIndex, setCurrentMonthIndex] = useState(availableMonths.length - 1);
   const currentMonthStr = mounted ? (availableMonths[currentMonthIndex] || new Date().toISOString().substring(0, 7)) : '2026-05';

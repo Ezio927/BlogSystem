@@ -1,3 +1,5 @@
+import { readCollection } from '../../lib/collections';
+export const dynamic = 'force-dynamic';
 import Navbar from '../../components/Navbar';
 import PageTransition from '../../components/PageTransition';
 import FriendsBoard from './FriendsBoard';
@@ -14,7 +16,7 @@ export default function FriendsPage() {
       <Navbar />
       <PageTransition>
         <div className="mt-28">
-          <FriendsBoard />
+          <FriendsBoard {...readCollection('friends')} />
         </div>
       </PageTransition>
     </div>

@@ -58,8 +58,8 @@ export default function Navbar({ previewOnly = false, compact = false }: { previ
   const navLinks = [
     { name: '首页', href: '/' },
     { name: '项目', href: '/projects' },
-    { name: '归档', href: '/timeline' },
-    { name: '照片墙', href: '/photowall' },
+    { name: '文章', href: '/timeline' },
+    { name: '生活碎片', href: '/photowall' },
     { name: '说说', href: '/moments' },
     { name: '杂谈', href: '/chatter' },
     { name: '🌳 灵境', href: '/tree' }, // <--- 新增的入口在这里喵！

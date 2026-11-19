@@ -1,3 +1,4 @@
+import { readCollection } from '../../lib/collections';
 import { listPublicFiles, readPublicMarkdown } from '../../lib/publicContent.mjs';
 import fs from 'fs';
 import path from 'path';
@@ -54,6 +55,8 @@ export default function CreativeWorkshopPage() {
 
   return (
     <CreativeWorkshopClient
+      totalFriends={readCollection('friends').items.length}
+      totalPhotos={readCollection('albums').items.reduce((sum, album) => sum + album.photos.length, 0)}
       posts={posts}
       chatters={chatters}
       moments={moments}

@@ -5,7 +5,6 @@ import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { MapPin, MessageSquare, Clock, Sparkles, Search, ArrowDownAZ, ArrowUpZA, ChevronLeft, ChevronRight, Ghost, Plus, Image as ImageIcon, X, Send, Link as LinkIcon, Zap, Trash2, AlertTriangle } from 'lucide-react';
 import MomentComments from '../../components/MomentComments';
 import { useToast } from '../../components/ToastProvider';
-import { siteConfig } from '../../siteConfig';
 import { useOperations } from '../../context/OperationContext';
 
 function timeAgo(dateStr: string) {
@@ -81,32 +80,30 @@ export default function MomentList({ moments, authorName, avatarUrl }: any) {
   };
 
   const handleFileUpload = async (files: FileList | File[]) => {
-    const picUrl = (siteConfig as any).picBedUrl || "https://pic.dusays.com";
-    const picToken = (siteConfig as any).picBedToken;
-    if (!picToken) { showToast("未配置图床 Token！", "error"); return; }
+    if (isUploading || isSubmitting) return;
+    const batch = Array.from(files);
     setIsUploading(true);
     showToast(`正在上传 ${files.length} 张图片...`, "info");
     try {
       const configRes = await fetch(`/backend_config.json?t=${Date.now()}`);
       const configData = await configRes.json();
-      const newUrls: string[] = [];
-      for (let i = 0; i < files.length; i++) {
+      const failures: string[] = [];
+      for (let i = 0; i < batch.length; i++) {
         const uploadData = new FormData();
-        uploadData.append('file', files[i]);
-        uploadData.append('url', picUrl);
-        uploadData.append('token', picToken);
-        const res = await fetch(`http://127.0.0.1:${configData.api_port}/api/picbed/upload`, {
+        uploadData.append('file', batch[i]);
+        const res = await fetch(`http://127.0.0.1:${configData.api_port}/api/media/upload`, {
           method: 'POST',
           body: uploadData,
         });
         const data = await res.json();
-        if (data.success && data.url) newUrls.push(data.url);
-        else showToast(`第 ${i+1} 张上传失败`, "error");
+        if (data.success && data.url) {
+          setNewMoment(prev => ({ ...prev, images: [...prev.images, data.url] }));
+        } else {
+          failures.push(batch[i].name + '：' + (data.message || '上传失败'));
+        }
       }
-      if (newUrls.length > 0) {
-        setNewMoment(prev => ({ ...prev, images: [...prev.images, ...newUrls] }));
-        showToast(`✅ 成功添加 ${newUrls.length} 张图片`, "success");
-      }
+      if (failures.length) showToast(failures.join('；'), 'error');
+      else showToast('图片已添加', 'success');
     } catch (error: any) {
       showToast(`连接异常: ${error.message}`, "error");
     } finally {
@@ -422,7 +419,7 @@ export default function MomentList({ moments, authorName, avatarUrl }: any) {
                 <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
                   <Sparkles className="text-indigo-500" /> 记录新瞬间
                 </h2>
-                <button onClick={() => setIsPublishOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-red-500 transition-colors">
+                <button disabled={isUploading || isSubmitting} onClick={() => setIsPublishOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-red-500 transition-colors">
                   <X size={20} />
                 </button>
               </div>
@@ -459,7 +456,7 @@ export default function MomentList({ moments, authorName, avatarUrl }: any) {
                       : 'border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                   }`}
                 >
-                  <input type="file" multiple ref={fileInputRef} onChange={(e) => e.target.files && handleFileUpload(e.target.files)} accept="image/*" className="hidden" />
+                  <input type="file" multiple ref={fileInputRef} onChange={(e) => e.target.files && handleFileUpload(e.target.files)} disabled={isUploading || isSubmitting} accept="image/png,image/jpeg,image/webp" className="hidden" />
                   {isUploading ? (
                     <Clock className="animate-spin text-indigo-500" size={28} />
                   ) : (
@@ -508,7 +505,7 @@ export default function MomentList({ moments, authorName, avatarUrl }: any) {
               )}
 
               <div className="flex flex-wrap gap-3 mt-auto pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
-                <button onClick={() => setIsPublishOpen(false)} className="flex-1 py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black uppercase tracking-widest text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
+                <button disabled={isUploading || isSubmitting} onClick={() => setIsPublishOpen(false)} className="flex-1 py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black uppercase tracking-widest text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
                   取消
                 </button>
 

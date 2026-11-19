@@ -1,10 +1,12 @@
+import { readCollection } from '../../lib/collections';
+export const dynamic = 'force-dynamic';
 import { siteConfig } from "../../siteConfig";
 import PhotoWallClient from "./PhotoWallClient";
 
 export const metadata = {
-  title: "照片墙 | " + siteConfig.title,
+  title: "生活碎片 | " + siteConfig.title,
 };
 
 export default function PhotoWallPage() {
-  return <PhotoWallClient />;
+  return <PhotoWallClient {...readCollection('albums')} />;
 }
